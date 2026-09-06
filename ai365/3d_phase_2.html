@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D FPS Demo - Phase 2 (Map & Collision)</title>
+    <title>3D FPS Demo - Phase 2 (Fixed)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -104,20 +104,20 @@
         /* Phase 2: F3 Debug 面板 */
         #debug-panel {
             position: absolute;
-            top: 20px;
-            left: 200px;
-            background: rgba(0, 0, 0, 0.85);
+            top: 100px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
             border: 1px solid #00ffcc;
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 13px;
-            padding: 12px 16px;
+            padding: 12px;
             border-radius: 6px;
+            color: #00ffcc;
+            font-family: monospace;
+            font-size: 14px;
             display: none;
-            z-index: 15;
-            line-height: 1.6;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 255, 200, 0.2);
+            z-index: 15;
+            line-height: 1.5;
+            min-width: 260px;
         }
 
         /* 開始畫面遮罩 */
@@ -161,10 +161,10 @@
         }
 
         .instructions {
-            margin-top: 30px;
+            margin-top: 40px;
             color: #aaa;
             font-size: 14px;
-            line-height: 1.8;
+            line-height: 1.6;
             text-align: center;
         }
     </style>
@@ -177,6 +177,16 @@
         <!-- 準星 -->
         <div id="crosshair"></div>
 
+        <!-- Debug 面板 (F3) -->
+        <div id="debug-panel">
+            <div><strong>[ DEBUG MODE (F3) ]</strong></div>
+            <div>FPS: <span id="dbg-fps">60</span></div>
+            <div>Position: <span id="dbg-pos">X: 0 Y: 0 Z: 0</span></div>
+            <div>Velocity: <span id="dbg-vel">0.0</span></div>
+            <div>Grounded: <span id="dbg-ground">true</span></div>
+            <div>Map: <span id="dbg-map">MilitaryBase</span></div>
+        </div>
+
         <!-- HUD UI -->
         <div id="hud">
             <div id="hud-top-left" class="hud-panel">HP: <span id="hp-val">100</span></div>
@@ -184,36 +194,29 @@
             <div id="hud-bottom-right" class="hud-panel">AMMO: <span id="ammo-val">30</span> / <span id="max-ammo-val">120</span></div>
         </div>
 
-        <!-- Phase 2: Debug Overlay (F3 Toggle) -->
-        <div id="debug-panel">
-            <div>FPS: <span id="debug-fps">60</span></div>
-            <div>Position: <span id="debug-pos">X: 0.0 Y: 1.8 Z: 0.0</span></div>
-            <div>Velocity: <span id="debug-vel">0.0</span> (Vertical Y: <span id="debug-vy">0.0</span>)</div>
-            <div>Grounded: <span id="debug-grounded">true</span></div>
-            <div>Map: <span id="debug-map">MilitaryBase-Alpha</span></div>
-        </div>
-
         <!-- 開始畫面 overlay -->
         <div id="start-screen">
             <h1>3D FPS DEMO - PHASE 2</h1>
             <p>[ CLICK TO EXPLORE BASE ]</p>
             <div class="instructions">
-                <b>操作說明：</b><br>
-                WASD：前後左右移動 | Shift：衝刺 | Space：跳躍<br>
-                滑鼠移動：旋轉視角 | <b>F3：切換 Debug 偵錯資訊</b><br>
-                <i>特色：包含完整軍事基地、樓梯高台、滑牆機制與邊界防禦</i>
+                控制說明：<br>
+                WASD：移動 | Shift：衝刺 | Space：跳躍<br>
+                滑鼠移動：視角旋轉 | F3：開啟偵錯面板
             </div>
         </div>
     </div>
 
     <script>
+        /**
+         * InputManager - 負責鍵盤、滑鼠以及 F3 偵錯切換
+         */
         class InputManager {
             constructor() {
                 this.keys = {};
                 this.mouseMovementX = 0;
                 this.mouseMovementY = 0;
                 this.isPointerLocked = false;
-                this.debugToggled = false;
+                this.onToggleDebug = null; // 回呼函數
 
                 this.initListeners();
             }
@@ -221,11 +224,10 @@
             initListeners() {
                 window.addEventListener('keydown', (e) => {
                     this.keys[e.code] = true;
-
                     // 按下 F3 切換 Debug 面板
                     if (e.code === 'F3') {
                         e.preventDefault();
-                        this.debugToggled = !this.debugToggled;
+                        if (this.onToggleDebug) this.onToggleDebug();
                     }
                 });
 
@@ -235,8 +237,8 @@
 
                 document.addEventListener('mousemove', (e) => {
                     if (this.isPointerLocked) {
-                        this.mouseMovementX = e.movementX || 0;
-                        this.mouseMovementY = e.movementY || 0;
+                        this.mouseMovementX += e.movementX || e.clientX - window.innerWidth / 2 || 0;
+                        this.mouseMovementY += e.movementY || e.clientY - window.innerHeight / 2 || 0;
                     }
                 });
             }
@@ -253,22 +255,25 @@
             }
         }
 
+        /**
+         * UIManager - 負責介面、HUD 與 F3 偵錯資訊更新
+         */
         class UIManager {
             constructor() {
                 this.startScreen = document.getElementById('start-screen');
+                this.debugPanel = document.getElementById('debug-panel');
                 this.hpVal = document.getElementById('hp-val');
                 this.scoreVal = document.getElementById('score-val');
                 this.ammoVal = document.getElementById('ammo-val');
                 this.maxAmmoVal = document.getElementById('max-ammo-val');
-
-                // Debug UI
-                this.debugPanel = document.getElementById('debug-panel');
-                this.debugFps = document.getElementById('debug-fps');
-                this.debugPos = document.getElementById('debug-pos');
-                this.debugVel = document.getElementById('debug-vel');
-                this.debugVy = document.getElementById('debug-vy');
-                this.debugGrounded = document.getElementById('debug-grounded');
-                this.debugMap = document.getElementById('debug-map');
+                
+                // Debug 元素
+                this.dbgFps = document.getElementById('dbg-fps');
+                this.dbgPos = document.getElementById('dbg-pos');
+                this.dbgVel = document.getElementById('dbg-vel');
+                this.dbgGround = document.getElementById('dbg-ground');
+                this.dbgMap = document.getElementById('dbg-map');
+                this.isDebugVisible = false;
             }
 
             hideStartScreen() {
@@ -279,322 +284,201 @@
                 this.startScreen.style.display = 'flex';
             }
 
-            updateHP(hp) {
-                this.hpVal.textContent = Math.max(0, Math.floor(hp));
+            toggleDebug() {
+                this.isDebugVisible = !this.isDebugVisible;
+                this.debugPanel.style.display = this.isDebugVisible ? 'block' : 'none';
             }
 
-            updateScore(score) {
-                this.scoreVal.textContent = score;
+            updateDebug(fps, pos, speed, grounded, mapName) {
+                if (!this.isDebugVisible) return;
+                this.dbgFps.textContent = Math.round(fps);
+                this.dbgPos.textContent = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+                this.dbgVel.textContent = speed.toFixed(2);
+                this.dbgGround.textContent = grounded;
+                this.dbgMap.textContent = mapName;
             }
 
+            updateHP(hp) { this.hpVal.textContent = Math.max(0, Math.floor(hp)); }
+            updateScore(score) { this.scoreVal.textContent = score; }
             updateAmmo(current, reserve) {
                 this.ammoVal.textContent = current;
                 this.maxAmmoVal.textContent = reserve;
             }
-
-            updateDebugInfo(show, fps, pos, velHorizontal, velY, grounded, mapName) {
-                if (show) {
-                    this.debugPanel.style.display = 'block';
-                    this.debugFps.textContent = fps;
-                    this.debugPos.textContent = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
-                    this.debugVel.textContent = velHorizontal.toFixed(2);
-                    this.debugVy.textContent = velY.toFixed(2);
-                    this.debugGrounded.textContent = grounded ? "true" : "false";
-                    this.debugMap.textContent = mapName;
-                } else {
-                    this.debugPanel.style.display = 'none';
-                }
-            }
         }
 
+        /**
+         * GameMap - 建立未來軍事基地 3D 地圖、高台、樓梯、掩體與 Spawn 點
+         */
         class GameMap {
             constructor(scene) {
                 this.scene = scene;
-                this.collidables = []; // 碰撞障礙物清單
-                this.mapName = "MilitaryBase-Alpha";
-
-                // Spawn Points
-                this.playerSpawn = { position: new THREE.Vector3(-35, 1.8, 35), rotationY: -Math.PI / 4 };
-                this.enemySpawns = [
-                    { id: 1, position: new THREE.Vector3(0, 1.8, -20) },
-                    { id: 2, position: new THREE.Vector3(25, 1.8, -15) },
-                    { id: 3, position: new THREE.Vector3(-20, 1.8, -25) },
-                    { id: 4, position: new THREE.Vector3(30, 7.8, 10) } // 高台 Spawn
+                this.collidables = [];
+                this.playerSpawnPoint = new THREE.Vector3(0, 1.8, 25);
+                this.enemySpawnPoints = [
+                    new THREE.Vector3(-20, 1.8, -30),
+                    new THREE.Vector3(20, 1.8, -30),
+                    new THREE.Vector3(0, 1.8, -40)
                 ];
-
-                this.materials = {
-                    ground: new THREE.MeshStandardMaterial({ color: 0x161e27, roughness: 0.8, metalness: 0.2 }),
-                    road: new THREE.MeshStandardMaterial({ color: 0x0f151c, roughness: 0.9 }),
-                    wall: new THREE.MeshStandardMaterial({ color: 0x243342, roughness: 0.6 }),
-                    accentWall: new THREE.MeshStandardMaterial({ color: 0x1c2836, roughness: 0.5 }),
-                    containerBlue: new THREE.MeshStandardMaterial({ color: 0x1f5f8b, roughness: 0.4 }),
-                    containerRed: new THREE.MeshStandardMaterial({ color: 0x902d2d, roughness: 0.4 }),
-                    containerOrange: new THREE.MeshStandardMaterial({ color: 0xc87114, roughness: 0.4 }),
-                    crate: new THREE.MeshStandardMaterial({ color: 0x5a6577, roughness: 0.7 }),
-                    cover: new THREE.MeshStandardMaterial({ color: 0x3d4e5e, roughness: 0.8 }),
-                    stairs: new THREE.MeshStandardMaterial({ color: 0x475868, roughness: 0.5, metalness: 0.3 }),
-                    platform: new THREE.MeshStandardMaterial({ color: 0x2e3d4d, roughness: 0.6 })
-                };
             }
 
             build() {
-                this.buildGroundAndRoads();
-                this.buildOuterWalls();
-                this.buildBuildingA(); // 主指揮所 (含二樓高台與斜坡樓梯)
-                this.buildBuildingB(); // 兵工廠/倉庫
-                this.buildContainersYard();
-                this.buildCoversAndCrates();
-                this.buildLightingAndDecorations();
-            }
-
-            createBox(w, h, d, x, y, z, mat, isCollidable = true) {
-                const geo = new THREE.BoxGeometry(w, h, d);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(x, y, z);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                this.scene.add(mesh);
-
-                if (isCollidable) {
-                    mesh.geometry.computeBoundingBox();
-                    this.collidables.push(mesh);
-                }
-                return mesh;
-            }
-
-            buildGroundAndRoads() {
+                // 1. 地面
                 const groundGeo = new THREE.PlaneGeometry(120, 120);
-                const ground = new THREE.Mesh(groundGeo, this.materials.ground);
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a222d, roughness: 0.8, metalness: 0.2 });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
                 ground.rotation.x = -Math.PI / 2;
                 ground.receiveShadow = true;
                 this.scene.add(ground);
 
-                const grid = new THREE.GridHelper(120, 60, 0x00ffcc, 0x1a2e3b);
+                // 科技感網格
+                const grid = new THREE.GridHelper(120, 60, 0x00ffcc, 0x224455);
                 grid.position.y = 0.01;
                 this.scene.add(grid);
 
-                const roadGeo = new THREE.PlaneGeometry(16, 120);
-                const road = new THREE.Mesh(roadGeo, this.materials.road);
-                road.rotation.x = -Math.PI / 2;
-                road.position.set(0, 0.02, 0);
-                road.receiveShadow = true;
-                this.scene.add(road);
-            }
+                // 材質
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.5 });
+                const containerMat1 = new THREE.MeshStandardMaterial({ color: 0x8e44ad, roughness: 0.4 });
+                const containerMat2 = new THREE.MeshStandardMaterial({ color: 0x2980b9, roughness: 0.4 });
+                const coverMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d, roughness: 0.7 });
+                const stairMat = new THREE.MeshStandardMaterial({ color: 0x16a085, roughness: 0.5 });
 
-            buildOuterWalls() {
-                const wallH = 8;
-                const wallT = 2;
-                const size = 120;
+                const createBox = (w, h, d, x, y, z, mat) => {
+                    const geo = new THREE.BoxGeometry(w, h, d);
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x, y, z);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    this.scene.add(mesh);
+                    this.collidables.push(mesh);
+                    return mesh;
+                };
 
-                this.createBox(size, wallH, wallT, 0, wallH/2, -size/2, this.materials.wall);
-                this.createBox(size, wallH, wallT, 0, wallH/2, size/2, this.materials.wall);
-                this.createBox(wallT, wallH, size, -size/2, wallH/2, 0, this.materials.wall);
-                this.createBox(wallT, wallH, size, size/2, wallH/2, 0, this.materials.wall);
-            }
+                // 2. 外圍邊界圍牆 (Boundary Walls)
+                createBox(120, 8, 2, 0, 4, -60, wallMat); // 北
+                createBox(120, 8, 2, 0, 4, 60, wallMat);  // 南
+                createBox(2, 8, 120, -60, 4, 0, wallMat); // 西
+                createBox(2, 8, 120, 60, 4, 0, wallMat);  // 東
 
-            buildBuildingA() {
-                const bx = 25, bz = 10;
+                // 3. 貨櫃區
+                createBox(4, 3.5, 10, -18, 1.75, -10, containerMat1);
+                createBox(4, 3.5, 10, -18, 5.25, -10, containerMat2); // 二層貨櫃
+                createBox(10, 3.5, 4, 18, 1.75, -20, containerMat2);
 
-                this.createBox(20, 6, 1, bx, 3, bz - 10, this.materials.accentWall);
-                this.createBox(20, 6, 1, bx, 3, bz + 10, this.materials.accentWall);
-                this.createBox(1, 6, 20, bx + 10, 3, bz, this.materials.accentWall);
-                
-                this.createBox(1, 6, 6, bx - 10, 3, bz - 7, this.materials.accentWall);
-                this.createBox(1, 6, 6, bx - 10, 3, bz + 7, this.materials.accentWall);
+                // 4. 掩體
+                createBox(6, 1.5, 1, 0, 0.75, -8, coverMat);
+                createBox(1, 1.5, 6, -10, 0.75, -20, coverMat);
+                createBox(1, 1.5, 6, 10, 0.75, -20, coverMat);
 
-                const platformY = 6;
-                this.createBox(20, 0.6, 20, bx, platformY, bz, this.materials.platform);
+                // 5. 建築物 A (指揮所與高台)
+                createBox(20, 6, 16, 25, 3, 10, wallMat);
+                // 二樓平台延伸
+                createBox(12, 1, 12, 25, 6.5, 10, wallMat);
+                this.collidables.push(this.scene.children[this.scene.children.length - 1]);
 
-                this.createBox(20, 1.2, 0.5, bx, platformY + 0.9, bz - 10, this.materials.cover);
-                this.createBox(20, 1.2, 0.5, bx, platformY + 0.9, bz + 10, this.materials.cover);
-                this.createBox(0.5, 1.2, 20, bx + 10, platformY + 0.9, bz, this.materials.cover);
-
-                const stairSteps = 12;
-                const startZ = bz + 10;
-                const stepLength = 0.8;
-                const stepHeight = platformY / stairSteps;
-
-                for (let i = 0; i < stairSteps; i++) {
-                    const stepY = (i + 1) * stepHeight;
-                    const stepZ = startZ + (i * stepLength) + 0.4;
-                    this.createBox(5, stepY, stepLength, bx - 5, stepY / 2, stepZ, this.materials.stairs);
+                // 6. 簡易階梯 (Stairs leading to Platform)
+                for (let i = 0; i < 6; i++) {
+                    createBox(3, 0.5 + (i * 0.2), 1.2, 13, 0.25 + (i * 0.5), 5 + (i * 1.1), stairMat);
                 }
-            }
 
-            buildBuildingB() {
-                const bx = -28, bz = -20;
-
-                this.createBox(18, 5, 1, bx, 2.5, bz - 8, this.materials.wall);
-                this.createBox(18, 5, 1, bx, 2.5, bz + 8, this.materials.wall);
-                this.createBox(1, 5, 16, bx - 9, 2.5, bz, this.materials.wall);
+                // 7. 燈光柱
+                const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 10, 16);
+                const pillarMat = new THREE.MeshStandardMaterial({ color: 0x34495e, metalness: 0.8 });
                 
-                this.createBox(1, 5, 4, bx + 9, 2.5, bz - 6, this.materials.wall);
-                this.createBox(1, 5, 4, bx + 9, 2.5, bz + 6, this.materials.wall);
-
-                this.createBox(18, 0.5, 16, bx, 5.25, bz, this.materials.platform);
-            }
-
-            buildContainersYard() {
-                this.createBox(4, 3.6, 10, -15, 1.8, -5, this.materials.containerBlue);
-                this.createBox(4, 3.6, 10, -15, 5.4, -5, this.materials.containerRed);
-
-                this.createBox(10, 3.6, 4, -25, 1.8, 10, this.materials.containerOrange);
-                this.createBox(4, 3.6, 10, -10, 1.8, 20, this.materials.containerBlue);
-
-                this.createBox(2, 1.2, 2, -15, 0.6, -11.5, this.materials.crate);
-                this.createBox(2, 2.4, 2, -15, 1.2, -13.5, this.materials.crate);
-            }
-
-            buildCoversAndCrates() {
-                const coverLocations = [
-                    { w: 6, h: 1.4, d: 1, x: 0, z: 5 },
-                    { w: 1, h: 1.4, d: 6, x: -8, z: -10 },
-                    { w: 1, h: 1.4, d: 6, x: 8, z: -10 },
-                    { w: 5, h: 1.4, d: 1, x: 0, z: -25 },
-                    { w: 1, h: 1.4, d: 8, x: 12, z: 30 },
-                    { w: 6, h: 1.4, d: 1, x: -25, z: 35 }
-                ];
-
-                coverLocations.forEach(c => {
-                    this.createBox(c.w, c.h, c.d, c.x, c.h / 2, c.z, this.materials.cover);
-                });
-
-                this.createBox(1.8, 1.8, 1.8, 5, 0.9, -15, this.materials.crate);
-                this.createBox(1.8, 1.8, 1.8, 6.8, 0.9, -15, this.materials.crate);
-                this.createBox(1.8, 1.8, 1.8, 5.9, 2.7, -15, this.materials.crate);
-            }
-
-            buildLightingAndDecorations() {
-                this.scene.background = new THREE.Color(0x0a1017);
-                this.scene.fog = new THREE.FogExp2(0x0a1017, 0.012);
-
-                const pillarGeo = new THREE.CylinderGeometry(0.4, 0.4, 9, 12);
-                const pillarMat = new THREE.MeshStandardMaterial({ color: 0x223344, metalness: 0.8 });
-
-                const addLightPillar = (x, z, colorHex) => {
+                const createLightPillar = (x, z) => {
                     const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-                    pillar.position.set(x, 4.5, z);
+                    pillar.position.set(x, 5, z);
                     pillar.castShadow = true;
                     this.scene.add(pillar);
                     this.collidables.push(pillar);
 
-                    const light = new THREE.PointLight(colorHex, 2.5, 22);
-                    light.position.set(x, 8.8, z);
+                    const light = new THREE.PointLight(0x00ffcc, 1.5, 20);
+                    light.position.set(x, 9, z);
                     this.scene.add(light);
                 };
 
-                addLightPillar(-45, -45, 0x00ffcc);
-                addLightPillar(45, -45, 0x00aaff);
-                addLightPillar(-45, 45, 0x00aaff);
-                addLightPillar(45, 45, 0x00ffcc);
-                addLightPillar(0, 0, 0xff9900);
+                createLightPillar(-35, -35);
+                createLightPillar(35, -35);
+                createLightPillar(-35, 35);
+                createLightPillar(35, 35);
             }
+
+            getCollidables() { return this.collidables; }
+            getPlayerSpawn() { return this.playerSpawnPoint; }
         }
 
+        /**
+         * CollisionSystem - 負責處理玩家與地圖物件碰撞、滑牆與地板高度檢測
+         */
         class CollisionSystem {
-            constructor(map) {
-                this.map = map;
-                this.playerRadius = 0.45;
-                this.stepHeight = 0.65;
+            constructor(collidables) {
+                this.collidables = collidables;
             }
 
-            movePlayer(position, intendedMovement) {
-                const collidables = this.map.collidables;
+            // 檢查水平位置是否與物件發生 AABB 碰撞
+            checkHorizontalCollision(pos, radius, height) {
+                const playerBox = new THREE.Box3(
+                    new THREE.Vector3(pos.x - radius, pos.y - height, pos.z - radius),
+                    new THREE.Vector3(pos.x + radius, pos.y, pos.z + radius)
+                );
 
-                position.x += intendedMovement.x;
-                if (this.checkHorizontalOverlap(position, collidables)) {
-                    position.x -= intendedMovement.x;
-                }
+                for (let i = 0; i < this.collidables.length; i++) {
+                    const obj = this.collidables[i];
+                    if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
+                    const objBox = obj.geometry.boundingBox.clone();
+                    objBox.applyMatrix4(obj.matrixWorld);
 
-                position.z += intendedMovement.z;
-                if (this.checkHorizontalOverlap(position, collidables)) {
-                    position.z -= intendedMovement.z;
-                }
-
-                const maxBoundary = 58.5;
-                position.x = Math.max(-maxBoundary, Math.min(maxBoundary, position.x));
-                position.z = Math.max(-maxBoundary, Math.min(maxBoundary, position.z));
-            }
-
-            checkHorizontalOverlap(position, collidables) {
-                const pMinX = position.x - this.playerRadius;
-                const pMaxX = position.x + this.playerRadius;
-                const pMinZ = position.z - this.playerRadius;
-                const pMaxZ = position.z + this.playerRadius;
-
-                const pMinY = position.y - 1.8 + this.stepHeight;
-                const pMaxY = position.y;
-
-                for (let i = 0; i < collidables.length; i++) {
-                    const mesh = collidables[i];
-                    const box = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
-
-                    if (pMaxX > box.min.x && pMinX < box.max.x &&
-                        pMaxZ > box.min.z && pMinZ < box.max.z &&
-                        pMaxY > box.min.y && pMinY < box.max.y) {
+                    if (playerBox.intersectsBox(objBox)) {
                         return true;
                     }
                 }
                 return false;
             }
 
-            getGroundHeight(position) {
-                let highestGround = 0;
-                const pMinX = position.x - this.playerRadius;
-                const pMaxX = position.x + this.playerRadius;
-                const pMinZ = position.z - this.playerRadius;
-                const pMaxZ = position.z + this.playerRadius;
+            // 射線向下檢測取得精確地板高度（支援樓梯與平台高低差）
+            getGroundHeight(pos, radius, currentY) {
+                const raycaster = new THREE.Raycaster();
+                const rayOrigin = new THREE.Vector3(pos.x, currentY + 1.0, pos.z);
+                raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
 
-                const playerFeetY = position.y - 1.8;
+                const intersects = raycaster.intersectObjects(this.collidables, true);
+                let highestGround = 0.0; // 地面預設高度
 
-                for (let i = 0; i < this.map.collidables.length; i++) {
-                    const mesh = this.map.collidables[i];
-                    const box = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
-
-                    if (pMaxX > box.min.x && pMinX < box.max.x &&
-                        pMaxZ > box.min.z && pMinZ < box.max.z) {
-                        
-                        if (box.max.y <= playerFeetY + this.stepHeight + 0.1) {
-                            if (box.max.y > highestGround) {
-                                highestGround = box.max.y;
-                            }
-                        }
+                for (let i = 0; i < intersects.length; i++) {
+                    const hit = intersects[i];
+                    // 確保交點在玩家腳部下方或剛好踏上
+                    if (hit.point.y <= currentY + 0.5 && hit.point.y > highestGround) {
+                        highestGround = hit.point.y;
                     }
                 }
-
                 return highestGround;
             }
         }
 
+        /**
+         * Player - 負責玩家移動、滑牆碰撞、重力與跳躍
+         */
         class Player {
-            constructor(camera, collisionSystem) {
+            constructor(camera, collisionSystem, spawnPoint) {
                 this.camera = camera;
                 this.collisionSystem = collisionSystem;
 
                 this.hp = 100;
                 this.height = 1.8;
+                this.radius = 0.45;
 
-                this.position = new THREE.Vector3();
+                this.position = spawnPoint.clone();
                 this.velocity = new THREE.Vector3();
+                this.camera.position.copy(this.position);
 
                 this.pitch = 0;
                 this.yaw = 0;
-                this.mouseSensitivity = 0.002;
+                this.mouseSensitivity = 0.0022;
 
-                this.walkSpeed = 7;
-                this.sprintSpeed = 12;
-                this.gravity = 26;
-                this.jumpStrength = 9.5;
+                this.walkSpeed = 6.5;
+                this.sprintSpeed = 12.0;
+                this.gravity = 28.0;
+                this.jumpStrength = 10.0;
                 this.isGrounded = false;
-                this.currentHorizontalSpeed = 0;
-            }
-
-            spawn(spawnPoint) {
-                this.position.copy(spawnPoint.position);
-                this.yaw = spawnPoint.rotationY;
-                this.pitch = 0;
-                this.velocity.set(0, 0, 0);
-                this.camera.position.copy(this.position);
             }
 
             update(delta, inputManager) {
@@ -618,33 +502,37 @@
             }
 
             handleMovement(delta, inputManager) {
-                const isSprinting = inputManager.getKey('ShiftLeft') || inputManager.getKey('ShiftRight');
-                const speed = isSprinting ? this.sprintSpeed : this.walkSpeed;
+                const isSprint = inputManager.getKey('ShiftLeft') || inputManager.getKey('ShiftRight');
+                const speed = isSprint ? this.sprintSpeed : this.walkSpeed;
 
-                const moveDirection = new THREE.Vector3();
-                if (inputManager.getKey('KeyW')) moveDirection.z -= 1;
-                if (inputManager.getKey('KeyS')) moveDirection.z += 1;
-                if (inputManager.getKey('KeyA')) moveDirection.x -= 1;
-                if (inputManager.getKey('KeyD')) moveDirection.x += 1;
-
-                moveDirection.normalize();
+                const moveDir = new THREE.Vector3();
+                if (inputManager.getKey('KeyW')) moveDir.z -= 1;
+                if (inputManager.getKey('KeyS')) moveDir.z += 1;
+                if (inputManager.getKey('KeyA')) moveDir.x -= 1;
+                if (inputManager.getKey('KeyD')) moveDir.x += 1;
+                moveDir.normalize();
 
                 const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
                 const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
 
-                const intendedMovement = new THREE.Vector3();
-                intendedMovement.addScaledVector(forward, -moveDirection.z * speed * delta);
-                intendedMovement.addScaledVector(side, moveDirection.x * speed * delta);
+                const movement = new THREE.Vector3();
+                movement.addScaledVector(forward, -moveDir.z * speed * delta);
+                movement.addScaledVector(side, moveDir.x * speed * delta);
 
-                this.currentHorizontalSpeed = intendedMovement.length() / (delta || 0.016);
+                // X 軸滑動碰撞
+                this.position.x += movement.x;
+                if (this.collisionSystem.checkHorizontalCollision(this.position, this.radius, this.height)) {
+                    this.position.x -= movement.x;
+                }
 
-                this.collisionSystem.movePlayer(this.position, intendedMovement);
+                // Z 軸滑動碰撞
+                this.position.z += movement.z;
+                if (this.collisionSystem.checkHorizontalCollision(this.position, this.radius, this.height)) {
+                    this.position.z -= movement.z;
+                }
 
-                const groundY = this.collisionSystem.getGroundHeight(this.position);
-                const targetFeetY = groundY;
-
+                // 重力與跳躍
                 this.velocity.y -= this.gravity * delta;
-
                 if (inputManager.getKey('Space') && this.isGrounded) {
                     this.velocity.y = this.jumpStrength;
                     this.isGrounded = false;
@@ -652,79 +540,84 @@
 
                 this.position.y += this.velocity.y * delta;
 
-                if (this.position.y - this.height <= targetFeetY) {
-                    this.position.y = targetFeetY + this.height;
+                // 地板與高低差偵測
+                const targetGroundY = this.collisionSystem.getGroundHeight(this.position, this.radius, this.position.y);
+                const footY = this.position.y - this.height;
+
+                if (footY <= targetGroundY) {
+                    this.position.y = targetGroundY + this.height;
                     this.velocity.y = 0;
                     this.isGrounded = true;
-                } else {
-                    this.isGrounded = false;
+                } else if (footY > targetGroundY + 0.4) {
+                    this.isGrounded = false; // 懸空落下
                 }
 
                 this.camera.position.copy(this.position);
             }
+
+            getPosition() { return this.position; }
+            getVelocityMagnitude() { return new THREE.Vector2(this.velocity.x, this.velocity.z).length(); }
+            getIsGrounded() { return this.isGrounded; }
         }
 
+        /**
+         * Game - 核心遊戲流程控制類別
+         */
         class Game {
             constructor() {
                 this.container = document.getElementById('game-container');
-
                 this.initThree();
+
                 this.inputManager = new InputManager();
                 this.uiManager = new UIManager();
 
-                this.map = new GameMap(this.scene);
-                this.map.build();
+                // 綁定 F3 偵錯切換
+                this.inputManager.onToggleDebug = () => this.uiManager.toggleDebug();
 
-                this.collisionSystem = new CollisionSystem(this.map);
-                this.player = new Player(this.camera, this.collisionSystem);
+                // 初始化地圖與碰撞系統
+                this.gameMap = new GameMap(this.scene);
+                this.gameMap.build();
+                this.collisionSystem = new CollisionSystem(this.gameMap.getCollidables());
 
-                this.player.spawn(this.map.playerSpawn);
+                // 初始化玩家
+                this.player = new Player(this.camera, this.collisionSystem, this.gameMap.getPlayerSpawn());
 
                 this.clock = new THREE.Clock();
-                this.fpsFrames = 0;
-                this.fpsTimeAcc = 0;
-                this.currentFPS = 60;
-
                 this.initPointerLock();
 
                 window.addEventListener('resize', () => this.onWindowResize());
-
                 this.animate();
             }
 
             initThree() {
                 this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0b0e14);
+                this.scene.fog = new THREE.FogExp2(0x0b0e14, 0.012);
 
-                this.camera = new THREE.PerspectiveCamera(
-                    75, 
-                    window.innerWidth / window.innerHeight, 
-                    0.1, 
-                    1000
-                );
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
                 this.renderer = new THREE.WebGLRenderer({ antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.setPixelRatio(window.devicePixelRatio);
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 this.container.appendChild(this.renderer.domElement);
 
-                const ambientLight = new THREE.AmbientLight(0x334455, 1.2);
+                // 燈光
+                const ambientLight = new THREE.AmbientLight(0x223344, 1.2);
                 this.scene.add(ambientLight);
 
-                const sunLight = new THREE.DirectionalLight(0xbbddee, 1.6);
-                sunLight.position.set(40, 60, 20);
-                sunLight.castShadow = true;
-                sunLight.shadow.mapSize.width = 2048;
-                sunLight.shadow.mapSize.height = 2048;
-                sunLight.shadow.camera.near = 0.5;
-                sunLight.shadow.camera.far = 180;
-                const d = 60;
-                sunLight.shadow.camera.left = -d;
-                sunLight.shadow.camera.right = d;
-                sunLight.shadow.camera.top = d;
-                sunLight.shadow.camera.bottom = -d;
-                this.scene.add(sunLight);
+                const mainLight = new THREE.DirectionalLight(0xaaccff, 1.6);
+                mainLight.position.set(40, 60, 30);
+                mainLight.castShadow = true;
+                mainLight.shadow.mapSize.width = 2048;
+                mainLight.shadow.mapSize.height = 2048;
+                const d = 50;
+                mainLight.shadow.camera.left = -d;
+                mainLight.shadow.camera.right = d;
+                mainLight.shadow.camera.top = d;
+                mainLight.shadow.camera.bottom = -d;
+                this.scene.add(mainLight);
             }
 
             initPointerLock() {
@@ -754,34 +647,27 @@
             animate() {
                 requestAnimationFrame(() => this.animate());
 
-                const delta = Math.min(this.clock.getDelta(), 0.1);
-
-                this.fpsFrames++;
-                this.fpsTimeAcc += delta;
-                if (this.fpsTimeAcc >= 0.5) {
-                    this.currentFPS = Math.round((this.fpsFrames / this.fpsTimeAcc));
-                    this.fpsFrames = 0;
-                    this.fpsTimeAcc = 0;
-                }
+                const delta = this.clock.getDelta();
+                const fps = 1 / (delta > 0 ? delta : 0.016);
 
                 if (this.inputManager.isPointerLocked) {
                     this.player.update(delta, this.inputManager);
                 }
 
-                this.uiManager.updateDebugInfo(
-                    this.inputManager.debugToggled,
-                    this.currentFPS,
-                    this.player.position,
-                    this.player.currentHorizontalSpeed,
-                    this.player.velocity.y,
-                    this.player.isGrounded,
-                    this.map.mapName
+                // 更新 Debug 資訊
+                this.uiManager.updateDebug(
+                    fps, 
+                    this.player.getPosition(), 
+                    this.player.getVelocityMagnitude(), 
+                    this.player.getIsGrounded(), 
+                    "MilitaryBase"
                 );
 
-                this.renderer.render(this.scene, this.画面 ? this.camera : this.camera);
+                this.renderer.render(this.scene, this.camera);
             }
         }
 
+        // 頁面載入後啟動遊戲
         window.onload = () => {
             window.game = new Game();
         };
