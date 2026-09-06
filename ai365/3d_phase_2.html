@@ -3,62 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D FPS Demo - Phase 2 (Fixed)</title>
+    <title>3D FPS Demo - Phase 3 Progression Fix</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
+        body, html {
             margin: 0;
             padding: 0;
-            user-select: none;
-        }
-
-        body, html {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0c0e14;
+            user-select: none;
         }
 
-        #game-container {
+        #canvas-container {
             width: 100%;
             height: 100%;
-            position: relative;
+            display: block;
         }
 
-        /* 準星 UI */
-        #crosshair {
+        /* 開始與結算畫面 */
+        #start-screen {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 10px;
-            height: 10px;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        #crosshair::before, #crosshair::after {
-            content: '';
-            position: absolute;
-            background-color: rgba(0, 255, 200, 0.8);
-        }
-
-        #crosshair::before {
-            top: 4px;
-            left: 0;
-            width: 10px;
-            height: 2px;
-        }
-
-        #crosshair::after {
             top: 0;
-            left: 4px;
-            width: 2px;
-            height: 10px;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
         }
 
-        /* HUD 抬頭顯示器 */
+        #start-screen h1 {
+            color: #00ffcc;
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            text-align: center;
+        }
+
+        #start-screen h2 {
+            color: #ff3366;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        #start-screen p {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        .play-btn {
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+            border-radius: 4px;
+        }
+
+        .play-btn:hover {
+            background: #00ffcc;
+            color: #111;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+        }
+
+        .instructions {
+            margin-top: 30px;
+            color: #888;
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.6;
+            background: rgba(0,0,0,0.4);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .instructions span {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        /* HUD 介面 */
         #hud {
             position: absolute;
             top: 0;
@@ -66,168 +110,150 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+            display: none;
             z-index: 5;
-            padding: 20px;
-            color: #00ffcc;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(0, 255, 200, 0.5);
         }
 
-        .hud-panel {
+        .hud-element {
             position: absolute;
-            background: rgba(10, 20, 30, 0.65);
-            border: 1px solid rgba(0, 255, 200, 0.3);
-            padding: 10px 20px;
-            border-radius: 4px;
-            backdrop-filter: blur(4px);
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        #hud-top-left {
+        #hp-display {
             top: 20px;
             left: 20px;
-            font-size: 20px;
+            font-size: 1.8rem;
+            color: #ffaa00;
         }
 
-        #hud-top-right {
+        #timer-display {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.2rem;
+            color: #00ffcc;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 20px;
+            border-radius: 8px;
+            border: 1px solid #00ffcc;
+        }
+
+        #score-display {
             top: 20px;
             right: 20px;
-            font-size: 20px;
+            font-size: 1.8rem;
+            color: #ff3366;
         }
 
-        #hud-bottom-right {
+        #level-display {
+            top: 70px;
+            right: 20px;
+            font-size: 1.4rem;
+            color: #33ccff;
+        }
+
+        #ammo-display {
             bottom: 20px;
             right: 20px;
-            font-size: 24px;
-            text-align: right;
+            font-size: 1.8rem;
+            color: #00ffcc;
         }
 
-        /* Phase 2: F3 Debug 面板 */
-        #debug-panel {
-            position: absolute;
-            top: 100px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #00ffcc;
-            padding: 12px;
-            border-radius: 6px;
-            color: #00ffcc;
-            font-family: monospace;
-            font-size: 14px;
+        #reload-prompt {
+            bottom: 70px;
+            right: 20px;
+            font-size: 1.2rem;
+            color: #ff3333;
             display: none;
-            pointer-events: none;
-            z-index: 15;
-            line-height: 1.5;
-            min-width: 260px;
+            animation: blink 0.8s infinite;
         }
 
-        /* 開始畫面遮罩 */
-        #start-screen {
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* 準心 */
+        #crosshair {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(15,25,35,0.92) 0%, rgba(5,10,15,0.98) 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            color: #fff;
-            cursor: pointer;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
         }
 
-        #start-screen h1 {
-            font-size: 48px;
-            letter-spacing: 4px;
-            color: #00ffcc;
-            margin-bottom: 20px;
-            text-shadow: 0 0 15px rgba(0, 255, 200, 0.6);
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 204, 0.9);
+            box-shadow: 0 0 4px #00ffcc;
         }
 
-        #start-screen p {
-            font-size: 20px;
-            color: #88ffdd;
-            border: 2px solid #00ffcc;
-            padding: 12px 30px;
-            border-radius: 30px;
-            background: rgba(0, 255, 200, 0.1);
-            transition: all 0.3s ease;
+        #crosshair::before {
+            top: 4px;
+            left: -6px;
+            width: 22px;
+            height: 2px;
         }
 
-        #start-screen p:hover {
-            background: rgba(0, 255, 200, 0.3);
-            box-shadow: 0 0 20px rgba(0, 255, 200, 0.5);
-        }
-
-        .instructions {
-            margin-top: 40px;
-            color: #aaa;
-            font-size: 14px;
-            line-height: 1.6;
-            text-align: center;
+        #crosshair::after {
+            top: -6px;
+            left: 4px;
+            width: 2px;
+            height: 22px;
         }
     </style>
-    <!-- 使用 CDN 引入 Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="game-container">
-        <!-- 準星 -->
-        <div id="crosshair"></div>
+    <div id="canvas-container"></div>
 
-        <!-- Debug 面板 (F3) -->
-        <div id="debug-panel">
-            <div><strong>[ DEBUG MODE (F3) ]</strong></div>
-            <div>FPS: <span id="dbg-fps">60</span></div>
-            <div>Position: <span id="dbg-pos">X: 0 Y: 0 Z: 0</span></div>
-            <div>Velocity: <span id="dbg-vel">0.0</span></div>
-            <div>Grounded: <span id="dbg-ground">true</span></div>
-            <div>Map: <span id="dbg-map">MilitaryBase</span></div>
-        </div>
-
-        <!-- HUD UI -->
-        <div id="hud">
-            <div id="hud-top-left" class="hud-panel">HP: <span id="hp-val">100</span></div>
-            <div id="hud-top-right" class="hud-panel">Score: <span id="score-val">0</span></div>
-            <div id="hud-bottom-right" class="hud-panel">AMMO: <span id="ammo-val">30</span> / <span id="max-ammo-val">120</span></div>
-        </div>
-
-        <!-- 開始畫面 overlay -->
-        <div id="start-screen">
-            <h1>3D FPS DEMO - PHASE 2</h1>
-            <p>[ CLICK TO EXPLORE BASE ]</p>
-            <div class="instructions">
-                控制說明：<br>
-                WASD：移動 | Shift：衝刺 | Space：跳躍<br>
-                滑鼠移動：視角旋轉 | F3：開啟偵錯面板
-            </div>
+    <!-- 開始與結算畫面 -->
+    <div id="start-screen">
+        <h1>3D FPS TARGET DRILL</h1>
+        <h2>Phase 3: 目標挑戰</h2>
+        <p id="high-score-record">最高得分: 0 分</p>
+        <button class="play-btn">[ CLICK TO PLAY ]</button>
+        <div class="instructions">
+            移動: <span>W A S D</span> | 跳躍: <span>Space</span> | 跑步: <span>Shift</span><br>
+            射擊: <span>滑鼠左鍵</span> | 裝填: <span>R 鍵</span> | 離開指標: <span>ESC</span><br>
+            提示: 擊中目標獲得分數並自動補充 5 發子彈！Lv.3 起目標會移動！
         </div>
     </div>
 
+    <!-- 遊戲 HUD -->
+    <div id="hud">
+        <div id="hp-display" class="hud-element">High Score: 0</div>
+        <div id="timer-display" class="hud-element">100.0s</div>
+        <div id="score-display" class="hud-element">Score: 0</div>
+        <div id="level-display" class="hud-element">Level: 1</div>
+        <div id="ammo-display" class="hud-element">Ammo: 30 / 120</div>
+        <div id="reload-prompt" class="hud-element">RELOADING...</div>
+    </div>
+
+    <div id="crosshair"></div>
+
     <script>
-        /**
-         * InputManager - 負責鍵盤、滑鼠以及 F3 偵錯切換
-         */
         class InputManager {
             constructor() {
                 this.keys = {};
-                this.mouseMovementX = 0;
-                this.mouseMovementY = 0;
-                this.isPointerLocked = false;
-                this.onToggleDebug = null; // 回呼函數
+                this.mouseMovement = { x: 0, y: 0 };
+                this.isLocked = false;
+                this.leftMouseDown = false;
+                this.rightMouseDown = false;
+                this.reloadPressed = false;
 
-                this.initListeners();
-            }
-
-            initListeners() {
                 window.addEventListener('keydown', (e) => {
                     this.keys[e.code] = true;
-                    // 按下 F3 切換 Debug 面板
-                    if (e.code === 'F3') {
-                        e.preventDefault();
-                        if (this.onToggleDebug) this.onToggleDebug();
+                    if (e.code === 'KeyR') {
+                        this.reloadPressed = true;
                     }
                 });
 
@@ -236,441 +262,720 @@
                 });
 
                 document.addEventListener('mousemove', (e) => {
-                    if (this.isPointerLocked) {
-                        this.mouseMovementX += e.movementX || e.clientX - window.innerWidth / 2 || 0;
-                        this.mouseMovementY += e.movementY || e.clientY - window.innerHeight / 2 || 0;
+                    if (this.isLocked) {
+                        this.mouseMovement.x += e.movementX || e.mozMovementX || e.webkitMovementX || 0;
+                        this.mouseMovement.y += e.movementY || e.mozMovementY || e.webkitMovementY || 0;
                     }
+                });
+
+                document.addEventListener('mousedown', (e) => {
+                    if (!this.isLocked) return;
+                    if (e.button === 0) this.leftMouseDown = true;
+                    if (e.button === 2) this.rightMouseDown = true;
+                });
+
+                document.addEventListener('mouseup', (e) => {
+                    if (e.button === 0) this.leftMouseDown = false;
+                    if (e.button === 2) this.rightMouseDown = false;
                 });
             }
 
-            getKey(code) {
+            isKeyPressed(code) {
                 return !!this.keys[code];
             }
 
-            getMouseDelta() {
-                const delta = { x: this.mouseMovementX, y: this.mouseMovementY };
-                this.mouseMovementX = 0;
-                this.mouseMovementY = 0;
-                return delta;
+            getMouseMovement() {
+                const movement = { ...this.mouseMovement };
+                this.mouseMovement.x = 0;
+                this.mouseMovement.y = 0;
+                return movement;
             }
         }
 
-        /**
-         * UIManager - 負責介面、HUD 與 F3 偵錯資訊更新
-         */
         class UIManager {
             constructor() {
                 this.startScreen = document.getElementById('start-screen');
-                this.debugPanel = document.getElementById('debug-panel');
-                this.hpVal = document.getElementById('hp-val');
-                this.scoreVal = document.getElementById('score-val');
-                this.ammoVal = document.getElementById('ammo-val');
-                this.maxAmmoVal = document.getElementById('max-ammo-val');
+                this.hud = document.getElementById('hud');
+                this.crosshair = document.getElementById('crosshair');
+                this.hpEl = document.getElementById('hp-display');
+                this.scoreEl = document.getElementById('score-display');
+                this.timerEl = document.getElementById('timer-display');
+                this.levelEl = document.getElementById('level-display');
+                this.ammoEl = document.getElementById('ammo-display');
+                this.reloadPrompt = document.getElementById('reload-prompt');
+                this.highScoreRecord = document.getElementById('high-score-record');
                 
-                // Debug 元素
-                this.dbgFps = document.getElementById('dbg-fps');
-                this.dbgPos = document.getElementById('dbg-pos');
-                this.dbgVel = document.getElementById('dbg-vel');
-                this.dbgGround = document.getElementById('dbg-ground');
-                this.dbgMap = document.getElementById('dbg-map');
-                this.isDebugVisible = false;
+                this.highScore = 0;
             }
 
-            hideStartScreen() {
+            showGameUI() {
                 this.startScreen.style.display = 'none';
+                this.hud.style.display = 'block';
+                this.crosshair.style.display = 'block';
             }
 
-            showStartScreen() {
+            showScreen(titleText, subtitleText, btnText, finalScore = 0) {
                 this.startScreen.style.display = 'flex';
+                this.hud.style.display = 'none';
+                this.crosshair.style.display = 'none';
+
+                if (finalScore > this.highScore) {
+                    this.highScore = finalScore;
+                }
+
+                const titleH1 = this.startScreen.querySelector('h1');
+                const titleH2 = this.startScreen.querySelector('h2');
+                const playBtn = this.startScreen.querySelector('.play-btn');
+
+                titleH1.innerText = titleText;
+                titleH2.innerText = subtitleText;
+                playBtn.innerText = btnText;
+                this.highScoreRecord.innerText = `最高得分: ${this.highScore} 分`;
             }
 
-            toggleDebug() {
-                this.isDebugVisible = !this.isDebugVisible;
-                this.debugPanel.style.display = this.isDebugVisible ? 'block' : 'none';
-            }
-
-            updateDebug(fps, pos, speed, grounded, mapName) {
-                if (!this.isDebugVisible) return;
-                this.dbgFps.textContent = Math.round(fps);
-                this.dbgPos.textContent = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
-                this.dbgVel.textContent = speed.toFixed(2);
-                this.dbgGround.textContent = grounded;
-                this.dbgMap.textContent = mapName;
-            }
-
-            updateHP(hp) { this.hpVal.textContent = Math.max(0, Math.floor(hp)); }
-            updateScore(score) { this.scoreVal.textContent = score; }
-            updateAmmo(current, reserve) {
-                this.ammoVal.textContent = current;
-                this.maxAmmoVal.textContent = reserve;
+            updateHUD(highScore, score, ammo, maxAmmo, reserveAmmo, timeLeft, isReloading, level) {
+                this.hpEl.innerText = `High Score: ${highScore}`;
+                this.scoreEl.innerText = `Score: ${score}`;
+                this.levelEl.innerText = `Level: ${level}`;
+                this.timerEl.innerText = `${Math.max(0, timeLeft).toFixed(1)}s`;
+                this.ammoEl.innerText = `Ammo: ${ammo} / ${reserveAmmo}`;
+                this.reloadPrompt.style.display = isReloading ? 'block' : 'none';
             }
         }
 
-        /**
-         * GameMap - 建立未來軍事基地 3D 地圖、高台、樓梯、掩體與 Spawn 點
-         */
-        class GameMap {
-            constructor(scene) {
-                this.scene = scene;
-                this.collidables = [];
-                this.playerSpawnPoint = new THREE.Vector3(0, 1.8, 25);
-                this.enemySpawnPoints = [
-                    new THREE.Vector3(-20, 1.8, -30),
-                    new THREE.Vector3(20, 1.8, -30),
-                    new THREE.Vector3(0, 1.8, -40)
-                ];
-            }
-
-            build() {
-                // 1. 地面
-                const groundGeo = new THREE.PlaneGeometry(120, 120);
-                const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a222d, roughness: 0.8, metalness: 0.2 });
-                const ground = new THREE.Mesh(groundGeo, groundMat);
-                ground.rotation.x = -Math.PI / 2;
-                ground.receiveShadow = true;
-                this.scene.add(ground);
-
-                // 科技感網格
-                const grid = new THREE.GridHelper(120, 60, 0x00ffcc, 0x224455);
-                grid.position.y = 0.01;
-                this.scene.add(grid);
-
-                // 材質
-                const wallMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.5 });
-                const containerMat1 = new THREE.MeshStandardMaterial({ color: 0x8e44ad, roughness: 0.4 });
-                const containerMat2 = new THREE.MeshStandardMaterial({ color: 0x2980b9, roughness: 0.4 });
-                const coverMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d, roughness: 0.7 });
-                const stairMat = new THREE.MeshStandardMaterial({ color: 0x16a085, roughness: 0.5 });
-
-                const createBox = (w, h, d, x, y, z, mat) => {
-                    const geo = new THREE.BoxGeometry(w, h, d);
-                    const mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.set(x, y, z);
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                    this.scene.add(mesh);
-                    this.collidables.push(mesh);
-                    return mesh;
-                };
-
-                // 2. 外圍邊界圍牆 (Boundary Walls)
-                createBox(120, 8, 2, 0, 4, -60, wallMat); // 北
-                createBox(120, 8, 2, 0, 4, 60, wallMat);  // 南
-                createBox(2, 8, 120, -60, 4, 0, wallMat); // 西
-                createBox(2, 8, 120, 60, 4, 0, wallMat);  // 東
-
-                // 3. 貨櫃區
-                createBox(4, 3.5, 10, -18, 1.75, -10, containerMat1);
-                createBox(4, 3.5, 10, -18, 5.25, -10, containerMat2); // 二層貨櫃
-                createBox(10, 3.5, 4, 18, 1.75, -20, containerMat2);
-
-                // 4. 掩體
-                createBox(6, 1.5, 1, 0, 0.75, -8, coverMat);
-                createBox(1, 1.5, 6, -10, 0.75, -20, coverMat);
-                createBox(1, 1.5, 6, 10, 0.75, -20, coverMat);
-
-                // 5. 建築物 A (指揮所與高台)
-                createBox(20, 6, 16, 25, 3, 10, wallMat);
-                // 二樓平台延伸
-                createBox(12, 1, 12, 25, 6.5, 10, wallMat);
-                this.collidables.push(this.scene.children[this.scene.children.length - 1]);
-
-                // 6. 簡易階梯 (Stairs leading to Platform)
-                for (let i = 0; i < 6; i++) {
-                    createBox(3, 0.5 + (i * 0.2), 1.2, 13, 0.25 + (i * 0.5), 5 + (i * 1.1), stairMat);
-                }
-
-                // 7. 燈光柱
-                const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 10, 16);
-                const pillarMat = new THREE.MeshStandardMaterial({ color: 0x34495e, metalness: 0.8 });
-                
-                const createLightPillar = (x, z) => {
-                    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-                    pillar.position.set(x, 5, z);
-                    pillar.castShadow = true;
-                    this.scene.add(pillar);
-                    this.collidables.push(pillar);
-
-                    const light = new THREE.PointLight(0x00ffcc, 1.5, 20);
-                    light.position.set(x, 9, z);
-                    this.scene.add(light);
-                };
-
-                createLightPillar(-35, -35);
-                createLightPillar(35, -35);
-                createLightPillar(-35, 35);
-                createLightPillar(35, 35);
-            }
-
-            getCollidables() { return this.collidables; }
-            getPlayerSpawn() { return this.playerSpawnPoint; }
-        }
-
-        /**
-         * CollisionSystem - 負責處理玩家與地圖物件碰撞、滑牆與地板高度檢測
-         */
-        class CollisionSystem {
-            constructor(collidables) {
-                this.collidables = collidables;
-            }
-
-            // 檢查水平位置是否與物件發生 AABB 碰撞
-            checkHorizontalCollision(pos, radius, height) {
-                const playerBox = new THREE.Box3(
-                    new THREE.Vector3(pos.x - radius, pos.y - height, pos.z - radius),
-                    new THREE.Vector3(pos.x + radius, pos.y, pos.z + radius)
-                );
-
-                for (let i = 0; i < this.collidables.length; i++) {
-                    const obj = this.collidables[i];
-                    if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
-                    const objBox = obj.geometry.boundingBox.clone();
-                    objBox.applyMatrix4(obj.matrixWorld);
-
-                    if (playerBox.intersectsBox(objBox)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            // 射線向下檢測取得精確地板高度（支援樓梯與平台高低差）
-            getGroundHeight(pos, radius, currentY) {
-                const raycaster = new THREE.Raycaster();
-                const rayOrigin = new THREE.Vector3(pos.x, currentY + 1.0, pos.z);
-                raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
-
-                const intersects = raycaster.intersectObjects(this.collidables, true);
-                let highestGround = 0.0; // 地面預設高度
-
-                for (let i = 0; i < intersects.length; i++) {
-                    const hit = intersects[i];
-                    // 確保交點在玩家腳部下方或剛好踏上
-                    if (hit.point.y <= currentY + 0.5 && hit.point.y > highestGround) {
-                        highestGround = hit.point.y;
-                    }
-                }
-                return highestGround;
-            }
-        }
-
-        /**
-         * Player - 負責玩家移動、滑牆碰撞、重力與跳躍
-         */
-        class Player {
-            constructor(camera, collisionSystem, spawnPoint) {
+        class Weapon {
+            constructor(camera, scene) {
                 this.camera = camera;
-                this.collisionSystem = collisionSystem;
+                this.scene = scene;
 
-                this.hp = 100;
-                this.height = 1.8;
-                this.radius = 0.45;
+                this.ammo = 30;
+                this.maxClip = 30;
+                this.reserveAmmo = 120;
+                this.maxReserveAmmo = 120;
+                this.fireRate = 0.1;
+                this.lastShotTime = 0;
+                this.isReloading = false;
+                this.reloadTime = 2.0;
+                this.reloadTimer = 0;
 
-                this.position = spawnPoint.clone();
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2(0, 0); // 螢幕正中央
+            }
+
+            reset() {
+                this.ammo = 30;
+                this.reserveAmmo = 120;
+                this.isReloading = false;
+                this.reloadTimer = 0;
+            }
+
+            addAmmo(amount) {
+                this.reserveAmmo = Math.min(this.maxReserveAmmo, this.reserveAmmo + amount);
+                this.ammo = Math.min(this.maxClip, this.ammo + amount);
+            }
+
+            update(delta, inputManager, camera, targetManager, clock) {
+                if (this.isReloading) {
+                    this.reloadTimer -= delta;
+                    if (this.reloadTimer <= 0) {
+                        this.isReloading = false;
+                        const needed = this.maxClip - this.ammo;
+                        const reloadAmount = Math.min(needed, this.reserveAmmo);
+                        this.ammo += reloadAmount;
+                        this.reserveAmmo -= reloadAmount;
+                    }
+                    return;
+                }
+
+                if (inputManager.reloadPressed) {
+                    inputManager.reloadPressed = false;
+                    if (!this.isReloading && this.ammo < this.maxClip && this.reserveAmmo > 0) {
+                        this.isReloading = true;
+                        this.reloadTimer = this.reloadTime;
+                    }
+                }
+
+                if (inputManager.leftMouseDown) {
+                    const now = clock.getElapsedTime();
+                    if (now - this.lastShotTime >= this.fireRate) {
+                        if (this.ammo > 0) {
+                            this.shoot(camera, targetManager);
+                            this.lastShotTime = now;
+                        } else if (!this.isReloading && this.reserveAmmo > 0) {
+                            this.isReloading = true;
+                            this.reloadTimer = this.reloadTime;
+                        }
+                    }
+                }
+            }
+
+            shoot(camera, targetManager) {
+                this.ammo--;
+                this.createMuzzleFlash(camera);
+
+                this.raycaster.setFromCamera(this.mouse, camera);
+                const targetMeshes = targetManager.getTargetMeshes();
+                const intersects = this.raycaster.intersectObjects(targetMeshes);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    targetManager.hitTarget(hit.object);
+                }
+            }
+
+            createMuzzleFlash(camera) {
+                const flashGeo = new THREE.SphereGeometry(0.1, 8, 8);
+                const flashMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                const flash = new THREE.Mesh(flashGeo, flashMat);
+                
+                flash.position.set(0.3, -0.2, -0.8);
+                camera.add(flash);
+
+                setTimeout(() => {
+                    camera.remove(flash);
+                }, 40);
+            }
+        }
+
+        class TargetManager {
+            constructor(scene, onScoreCallback) {
+                this.scene = scene;
+                this.onScoreCallback = onScoreCallback;
+                this.targets = [];
+                this.spawnTimer = 0;
+                this.spawnInterval = 4.0;
+                this.meshToTargetMap = new Map();
+            }
+
+            reset() {
+                for (let t of this.targets) {
+                    this.scene.remove(t.mesh);
+                    t.mesh.geometry.dispose();
+                    t.mesh.material.dispose();
+                }
+                this.targets = [];
+                this.meshToTargetMap.clear();
+                this.spawnTimer = 0;
+            }
+
+            update(delta, time, level) {
+                this.spawnTimer += delta;
+                if (this.spawnTimer >= this.spawnInterval) {
+                    this.spawnTimer = 0;
+                    this.spawnTarget();
+                }
+
+                for (let i = this.targets.length - 1; i >= 0; i--) {
+                    const t = this.targets[i];
+                    // 永遠保留上下輕微浮動
+                    t.mesh.position.y = t.initialY + Math.sin(time * t.speed + t.timeOffset) * 1.5;
+
+                    // 嚴格規定：Level 1 與 Level 2 目標物絕對不左右移動（X 軸固定）
+                    if (level >= 3) {
+                        // 從 Level 3 開始，每升 1 級速度增加 10%
+                        const speedMultiplier = 1.0 + (level - 3) * 0.1;
+                        t.mesh.position.x = t.initialX + Math.sin(time * 0.8 * t.speed + t.timeOffset) * 6.0 * speedMultiplier;
+                    } else {
+                        t.mesh.position.x = t.initialX;
+                    }
+                }
+            }
+
+            spawnTarget() {
+                if (this.targets.length >= 8) return;
+
+                const geometry = new THREE.DodecahedronGeometry(1.2);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xff3366,
+                    emissive: 0xff0044,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.2,
+                    metalness: 0.8
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+
+                const x = (Math.random() - 0.5) * 50;
+                const z = -Math.random() * 45 - 5;
+                const y = Math.random() * 4 + 2;
+
+                mesh.position.set(x, y, z);
+                mesh.castShadow = true;
+                this.scene.add(mesh);
+
+                const targetData = {
+                    mesh: mesh,
+                    initialX: x,
+                    initialY: y,
+                    timeOffset: Math.random() * 10,
+                    speed: (0.5 + Math.random() * 1.5)
+                };
+
+                this.targets.push(targetData);
+                this.meshToTargetMap.set(mesh.uuid, targetData);
+
+                const pLight = new THREE.PointLight(0xff3366, 1.5, 6);
+                mesh.add(pLight);
+            }
+
+            getTargetMeshes() {
+                return this.targets.map(t => t.mesh);
+            }
+
+            hitTarget(mesh) {
+                const targetData = this.meshToTargetMap.get(mesh.uuid);
+                if (!targetData) return;
+
+                this.createExplosion(mesh.position);
+
+                this.scene.remove(mesh);
+                mesh.geometry.dispose();
+                mesh.material.dispose();
+
+                const index = this.targets.indexOf(targetData);
+                if (index > -1) {
+                    this.targets.splice(index, 1);
+                }
+                this.meshToTargetMap.delete(mesh.uuid);
+
+                if (this.onScoreCallback) {
+                    this.onScoreCallback();
+                }
+
+                this.spawnTarget();
+            }
+
+            createExplosion(pos) {
+                const particleCount = 15;
+                const geometry = new THREE.BufferGeometry();
+                const positions = [];
+                const velocities = [];
+
+                for (let i = 0; i < particleCount; i++) {
+                    positions.push(pos.x, pos.y, pos.z);
+                    velocities.push(
+                        (Math.random() - 0.5) * 8,
+                        (Math.random() - 0.5) * 8 + 4,
+                        (Math.random() - 0.5) * 8
+                    );
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                const material = new THREE.PointsMaterial({
+                    color: 0xffaa00,
+                    size: 0.4,
+                    transparent: true,
+                    opacity: 1.0
+                });
+
+                const particleSystem = new THREE.Points(geometry, material);
+                this.scene.add(particleSystem);
+
+                let life = 0.5;
+                const animateExplosion = () => {
+                    life -= 0.02;
+                    if (life <= 0) {
+                        this.scene.remove(particleSystem);
+                        geometry.dispose();
+                        material.dispose();
+                        return;
+                    }
+
+                    const posAttr = geometry.attributes.position;
+                    for (let i = 0; i < particleCount; i++) {
+                        posAttr.setXYZ(
+                            i,
+                            posAttr.getX(i) + velocities[i] * 0.02,
+                            posAttr.getY(i) + velocities[i + 1] * 0.02,
+                            posAttr.getZ(i) + velocities[i + 2] * 0.02
+                        );
+                    }
+                    posAttr.needsUpdate = true;
+                    material.opacity = life * 2;
+                    requestAnimationFrame(animateExplosion);
+                };
+                animateExplosion();
+            }
+        }
+
+        class Player {
+            constructor(camera, inputManager, scene) {
+                this.camera = camera;
+                this.input = inputManager;
+                this.scene = scene;
+
+                this.position = new THREE.Vector3(0, 2, 15);
                 this.velocity = new THREE.Vector3();
                 this.camera.position.copy(this.position);
 
                 this.pitch = 0;
                 this.yaw = 0;
-                this.mouseSensitivity = 0.0022;
 
-                this.walkSpeed = 6.5;
-                this.sprintSpeed = 12.0;
-                this.gravity = 28.0;
-                this.jumpStrength = 10.0;
-                this.isGrounded = false;
+                this.moveSpeed = 6.0;
+                this.sprintMultiplier = 1.6;
+                this.jumpForce = 8.0;
+                this.gravity = 22.0;
+                this.canJump = false;
+                this.playerRadius = 0.6;
+                this.colliders = [];
             }
 
-            update(delta, inputManager) {
-                this.handleRotation(inputManager);
-                this.handleMovement(delta, inputManager);
+            reset() {
+                this.position.set(0, 2, 15);
+                this.velocity.set(0, 0, 0);
+                this.pitch = 0;
+                this.yaw = 0;
+                this.camera.position.copy(this.position);
+                this.camera.rotation.set(0, 0, 0);
             }
 
-            handleRotation(inputManager) {
-                const mouseDelta = inputManager.getMouseDelta();
+            addCollider(mesh) {
+                this.colliders.push(mesh);
+            }
 
-                this.yaw -= mouseDelta.x * this.mouseSensitivity;
-                this.pitch -= mouseDelta.y * this.mouseSensitivity;
+            update(delta) {
+                const mouse = this.input.getMouseMovement();
+                const sensitivity = 0.002;
+
+                this.yaw -= mouse.x * sensitivity;
+                this.pitch -= mouse.y * sensitivity;
 
                 const maxPitch = Math.PI / 2 - 0.01;
                 this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
 
-                const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-                euler.x = this.pitch;
-                euler.y = this.yaw;
-                this.camera.quaternion.setFromEuler(euler);
-            }
+                this.camera.rotation.set(0, 0, 0);
+                this.camera.rotateY(this.yaw);
+                this.camera.rotateX(this.pitch);
 
-            handleMovement(delta, inputManager) {
-                const isSprint = inputManager.getKey('ShiftLeft') || inputManager.getKey('ShiftRight');
-                const speed = isSprint ? this.sprintSpeed : this.walkSpeed;
+                let forward = 0;
+                let right = 0;
+
+                if (this.input.isKeyPressed('KeyW')) forward += 1;
+                if (this.input.isKeyPressed('KeyS')) forward -= 1;
+                if (this.input.isKeyPressed('KeyA')) right -= 1;
+                if (this.input.isKeyPressed('KeyD')) right += 1;
+
+                const isSprinting = this.input.isKeyPressed('ShiftLeft') || this.input.isKeyPressed('ShiftRight');
+                let currentSpeed = this.moveSpeed * (isSprinting ? this.sprintMultiplier : 1.0);
 
                 const moveDir = new THREE.Vector3();
-                if (inputManager.getKey('KeyW')) moveDir.z -= 1;
-                if (inputManager.getKey('KeyS')) moveDir.z += 1;
-                if (inputManager.getKey('KeyA')) moveDir.x -= 1;
-                if (inputManager.getKey('KeyD')) moveDir.x += 1;
+                const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+                const rightVec = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+                moveDir.addScaledVector(forwardVec, forward);
+                moveDir.addScaledVector(rightVec, right);
                 moveDir.normalize();
 
-                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-                const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+                this.velocity.x = moveDir.x * currentSpeed;
+                this.velocity.z = moveDir.z * currentSpeed;
 
-                const movement = new THREE.Vector3();
-                movement.addScaledVector(forward, -moveDir.z * speed * delta);
-                movement.addScaledVector(side, moveDir.x * speed * delta);
-
-                // X 軸滑動碰撞
-                this.position.x += movement.x;
-                if (this.collisionSystem.checkHorizontalCollision(this.position, this.radius, this.height)) {
-                    this.position.x -= movement.x;
+                if (this.input.isKeyPressed('Space') && this.canJump) {
+                    this.velocity.y = this.jumpForce;
+                    this.canJump = false;
                 }
 
-                // Z 軸滑動碰撞
-                this.position.z += movement.z;
-                if (this.collisionSystem.checkHorizontalCollision(this.position, this.radius, this.height)) {
-                    this.position.z -= movement.z;
-                }
-
-                // 重力與跳躍
                 this.velocity.y -= this.gravity * delta;
-                if (inputManager.getKey('Space') && this.isGrounded) {
-                    this.velocity.y = this.jumpStrength;
-                    this.isGrounded = false;
-                }
 
-                this.position.y += this.velocity.y * delta;
+                let newX = this.position.x + this.velocity.x * delta;
+                let newZ = this.position.z + this.velocity.z * delta;
+                let newY = this.position.y + this.velocity.y * delta;
 
-                // 地板與高低差偵測
-                const targetGroundY = this.collisionSystem.getGroundHeight(this.position, this.radius, this.position.y);
-                const footY = this.position.y - this.height;
-
-                if (footY <= targetGroundY) {
-                    this.position.y = targetGroundY + this.height;
+                if (newY <= 2.0) {
+                    newY = 2.0;
                     this.velocity.y = 0;
-                    this.isGrounded = true;
-                } else if (footY > targetGroundY + 0.4) {
-                    this.isGrounded = false; // 懸空落下
+                    this.canJump = true;
                 }
 
+                newX = Math.max(-45, Math.min(45, newX));
+                newZ = Math.max(-45, Math.min(45, newZ));
+
+                for (let box of this.colliders) {
+                    const boxPos = box.position;
+                    const scale = box.scale;
+                    if (Math.abs(newX - boxPos.x) < scale.x / 2 + this.playerRadius &&
+                        Math.abs(newZ - boxPos.z) < scale.z / 2 + this.playerRadius &&
+                        newY < boxPos.y + scale.y) {
+                        newX = this.position.x;
+                        newZ = this.position.z;
+                    }
+                }
+
+                this.position.set(newX, newY, newZ);
                 this.camera.position.copy(this.position);
             }
-
-            getPosition() { return this.position; }
-            getVelocityMagnitude() { return new THREE.Vector2(this.velocity.x, this.velocity.z).length(); }
-            getIsGrounded() { return this.isGrounded; }
         }
 
-        /**
-         * Game - 核心遊戲流程控制類別
-         */
         class Game {
             constructor() {
-                this.container = document.getElementById('game-container');
-                this.initThree();
-
-                this.inputManager = new InputManager();
-                this.uiManager = new UIManager();
-
-                // 綁定 F3 偵錯切換
-                this.inputManager.onToggleDebug = () => this.uiManager.toggleDebug();
-
-                // 初始化地圖與碰撞系統
-                this.gameMap = new GameMap(this.scene);
-                this.gameMap.build();
-                this.collisionSystem = new CollisionSystem(this.gameMap.getCollidables());
-
-                // 初始化玩家
-                this.player = new Player(this.camera, this.collisionSystem, this.gameMap.getPlayerSpawn());
-
-                this.clock = new THREE.Clock();
-                this.initPointerLock();
-
-                window.addEventListener('resize', () => this.onWindowResize());
-                this.animate();
-            }
-
-            initThree() {
+                this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x0b0e14);
-                this.scene.fog = new THREE.FogExp2(0x0b0e14, 0.012);
+                this.scene.background = new THREE.Color(0x0c0e14);
+                this.scene.fog = new THREE.FogExp2(0x0c0e14, 0.015);
 
                 this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
                 this.renderer = new THREE.WebGLRenderer({ antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio);
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 this.container.appendChild(this.renderer.domElement);
 
-                // 燈光
-                const ambientLight = new THREE.AmbientLight(0x223344, 1.2);
-                this.scene.add(ambientLight);
+                this.inputManager = new InputManager();
+                this.uiManager = new UIManager();
+                this.player = new Player(this.camera, this.inputManager, this.scene);
+                
+                this.weapon = new Weapon(this.camera, this.scene);
+                this.targetManager = new TargetManager(this.scene, () => {
+                    this.score++;
+                    this.weapon.addAmmo(5); // 擊中目標自動補充 5 發子彈
+                });
 
-                const mainLight = new THREE.DirectionalLight(0xaaccff, 1.6);
-                mainLight.position.set(40, 60, 30);
-                mainLight.castShadow = true;
-                mainLight.shadow.mapSize.width = 2048;
-                mainLight.shadow.mapSize.height = 2048;
-                const d = 50;
-                mainLight.shadow.camera.left = -d;
-                mainLight.shadow.camera.right = d;
-                mainLight.shadow.camera.top = d;
-                mainLight.shadow.camera.bottom = -d;
-                this.scene.add(mainLight);
+                this.score = 0;
+                this.level = 1;
+                this.timeLeft = 100.0;
+
+                this.clock = new THREE.Clock();
+                this.isRunning = false;
+
+                this.initLights();
+                this.initMap();
+                this.initEvents();
             }
 
-            initPointerLock() {
+            initLights() {
+                const ambientLight = new THREE.AmbientLight(0x446688, 1.2);
+                this.scene.add(ambientLight);
+
+                const dirLight = new THREE.DirectionalLight(0x00ffff, 1.0);
+                dirLight.position.set(30, 50, 30);
+                dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 2048;
+                dirLight.shadow.mapSize.height = 2048;
+                this.scene.add(dirLight);
+
+                const pointLight1 = new THREE.PointLight(0xff0055, 3, 40);
+                pointLight1.position.set(-15, 8, -15);
+                this.scene.add(pointLight1);
+
+                const pointLight2 = new THREE.PointLight(0x00ffcc, 3, 40);
+                pointLight2.position.set(15, 8, 15);
+                this.scene.add(pointLight2);
+            }
+
+            initMap() {
+                const groundGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
+                const groundMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x222633, 
+                    roughness: 0.7,
+                    metalness: 0.3
+                });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+
+                const gridHelper = new THREE.GridHelper(100, 50, 0x00ffcc, 0x444444);
+                gridHelper.position.y = 0.02;
+                this.scene.add(gridHelper);
+
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a4452, roughness: 0.4, metalness: 0.6 });
+                const containerMat1 = new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.4, metalness: 0.6 });
+                const containerMat2 = new THREE.MeshStandardMaterial({ color: 0x4477cc, roughness: 0.4, metalness: 0.6 });
+                const bunkerMat = new THREE.MeshStandardMaterial({ color: 0x4a5562, roughness: 0.6, metalness: 0.4 });
+
+                const mainBuildingGeo = new THREE.BoxGeometry(16, 8, 16);
+                const mainBuilding = new THREE.Mesh(mainBuildingGeo, wallMat);
+                mainBuilding.position.set(0, 4, -25);
+                mainBuilding.castShadow = true;
+                mainBuilding.receiveShadow = true;
+                this.scene.add(mainBuilding);
+                this.player.addCollider(mainBuilding);
+
+                const roofLightGeo = new THREE.BoxGeometry(16.2, 0.4, 16.2);
+                const roofLightMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+                const roofLight = new THREE.Mesh(roofLightGeo, roofLightMat);
+                roofLight.position.set(0, 8.2, -25);
+                this.scene.add(roofLight);
+
+                const createContainer = (x, z, rotY, mat) => {
+                    const geo = new THREE.BoxGeometry(4, 3, 8);
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x, 1.5, z);
+                    mesh.rotation.y = rotY;
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    this.scene.add(mesh);
+                    this.player.addCollider(mesh);
+                };
+
+                createContainer(-12, -8, 0, containerMat1);
+                createContainer(-16, -8, 0, containerMat2);
+                createContainer(12, 10, Math.PI / 4, containerMat1);
+                createContainer(15, 12, Math.PI / 4, containerMat2);
+
+                const createBarrier = (x, z, width, depth) => {
+                    const geo = new THREE.BoxGeometry(width, 2, depth);
+                    const mesh = new THREE.Mesh(geo, bunkerMat);
+                    mesh.position.set(x, 1, z);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    this.scene.add(mesh);
+                    this.player.addCollider(mesh);
+                };
+
+                createBarrier(-15, 10, 8, 2);
+                createBarrier(15, -10, 2, 8);
+                createBarrier(0, 15, 10, 2);
+
+                const boundaryGeo = new THREE.BoxGeometry(100, 4, 1);
+                const makeBoundary = (x, z, ry) => {
+                    const b = new THREE.Mesh(boundaryGeo, wallMat);
+                    b.position.set(x, 2, z);
+                    b.rotation.y = ry;
+                    this.scene.add(b);
+                    this.player.addCollider(b);
+                };
+                makeBoundary(0, -50, 0);
+                makeBoundary(0, 50, 0);
+                makeBoundary(-50, 0, Math.PI / 2);
+                makeBoundary(50, 0, Math.PI / 2);
+            }
+
+            initEvents() {
                 const startScreen = document.getElementById('start-screen');
+                const playBtn = startScreen.querySelector('.play-btn');
+
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.body.requestPointerLock();
+                });
 
                 startScreen.addEventListener('click', () => {
-                    this.container.requestPointerLock();
+                    document.body.requestPointerLock();
                 });
 
                 document.addEventListener('pointerlockchange', () => {
-                    if (document.pointerLockElement === this.container) {
-                        this.inputManager.isPointerLocked = true;
-                        this.uiManager.hideStartScreen();
+                    if (document.pointerLockElement === document.body) {
+                        this.inputManager.isLocked = true;
+                        this.uiManager.showGameUI();
+                        if (!this.isRunning) {
+                            this.startNewGame(false);
+                        }
                     } else {
-                        this.inputManager.isPointerLocked = false;
-                        this.uiManager.showStartScreen();
+                        this.inputManager.isLocked = false;
+                        if (this.isRunning) {
+                            this.isRunning = false;
+                            this.uiManager.showScreen("PAUSED", `當前得分: ${this.score} 分 (Level ${this.level})`, "[ RESUME GAME ]", this.score);
+                        }
                     }
+                });
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
                 });
             }
 
-            onWindowResize() {
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            startNewGame(isNextLevel = false) {
+                if (!isNextLevel) {
+                    this.score = 0;
+                    this.level = 1;
+                }
+                this.timeLeft = 100.0;
+                this.player.reset();
+                this.weapon.reset();
+                this.targetManager.reset();
+                this.targetManager.spawnTarget();
+                this.clock.start();
+                this.isRunning = true;
             }
 
-            animate() {
-                requestAnimationFrame(() => this.animate());
+            start() {
+                this.animate();
+            }
 
-                const delta = this.clock.getDelta();
-                const fps = 1 / (delta > 0 ? delta : 0.016);
+            animate = () => {
+                requestAnimationFrame(this.animate);
 
-                if (this.inputManager.isPointerLocked) {
-                    this.player.update(delta, this.inputManager);
+                if (!this.isRunning) {
+                    this.renderer.render(this.scene, this.camera);
+                    return;
                 }
 
-                // 更新 Debug 資訊
-                this.uiManager.updateDebug(
-                    fps, 
-                    this.player.getPosition(), 
-                    this.player.getVelocityMagnitude(), 
-                    this.player.getIsGrounded(), 
-                    "MilitaryBase"
+                const delta = this.clock.getDelta();
+                const elapsedTime = this.clock.getElapsedTime();
+
+                this.timeLeft -= delta;
+                if (this.timeLeft <= 0) {
+                    this.timeLeft = 0;
+                    this.isRunning = false;
+                    document.exitPointerLock();
+
+                    if (this.score >= 10) {
+                        this.level++;
+                        this.uiManager.showScreen(
+                            `LEVEL ${this.level - 1} COMPLETED!`, 
+                            `恭喜過關！得分: ${this.score} 分。準備進入 Level ${this.level}`, 
+                            `[ START LEVEL ${this.level} ]`, 
+                            this.score
+                        );
+                        
+                        const startScreen = document.getElementById('start-screen');
+                        const playBtn = startScreen.querySelector('.play-btn');
+                        
+                        const nextLevelHandler = (e) => {
+                            e.stopPropagation();
+                            playBtn.removeEventListener('click', nextLevelHandler);
+                            this.startNewGame(true);
+                            document.body.requestPointerLock();
+                        };
+                        playBtn.onclick = null;
+                        playBtn.addEventListener('click', nextLevelHandler);
+                    } else {
+                        this.uiManager.showScreen(
+                            "TIME'S UP!", 
+                            `未達 10 分過關標準。最終得分: ${this.score} 分`, 
+                            "[ TRY AGAIN ]", 
+                            this.score
+                        );
+                        const startScreen = document.getElementById('start-screen');
+                        const playBtn = startScreen.querySelector('.play-btn');
+                        const retryHandler = (e) => {
+                            e.stopPropagation();
+                            playBtn.removeEventListener('click', retryHandler);
+                            this.startNewGame(false);
+                            document.body.requestPointerLock();
+                        };
+                        playBtn.onclick = null;
+                        playBtn.addEventListener('click', retryHandler);
+                        this.level = 1;
+                    }
+                    return;
+                }
+
+                this.player.update(delta);
+                this.weapon.update(delta, this.inputManager, this.camera, this.targetManager, this.clock);
+                this.targetManager.update(delta, elapsedTime, this.level);
+
+                this.uiManager.updateHUD(
+                    this.uiManager.highScore,
+                    this.score,
+                    this.weapon.ammo,
+                    this.weapon.maxClip,
+                    this.weapon.reserveAmmo,
+                    this.timeLeft,
+                    this.weapon.isReloading,
+                    this.level
                 );
 
                 this.renderer.render(this.scene, this.camera);
             }
         }
 
-        // 頁面載入後啟動遊戲
-        window.onload = () => {
-            window.game = new Game();
-        };
+        window.addEventListener('load', () => {
+            const game = new Game();
+            game.start();
+        });
     </script>
 </body>
 </html>
