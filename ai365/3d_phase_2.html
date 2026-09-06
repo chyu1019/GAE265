@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D FPS Demo - Phase 3 Progression Fix</title>
+    <title>Target Rush 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body, html {
@@ -77,6 +77,7 @@
             transition: all 0.3s ease;
             box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
             border-radius: 4px;
+            pointer-events: auto;
         }
 
         .play-btn:hover {
@@ -217,24 +218,24 @@
 
     <!-- 開始與結算畫面 -->
     <div id="start-screen">
-        <h1>3D FPS TARGET DRILL</h1>
-        <h2>Phase 3: 目標挑戰</h2>
+        <h1>TARGET RUSH 3D</h1>
+        <h2></h2>
         <p id="high-score-record">最高得分: 0 分</p>
         <button class="play-btn">[ CLICK TO PLAY ]</button>
         <div class="instructions">
             移動: <span>W A S D</span> | 跳躍: <span>Space</span> | 跑步: <span>Shift</span><br>
             射擊: <span>滑鼠左鍵</span> | 裝填: <span>R 鍵</span> | 離開指標: <span>ESC</span><br>
-            提示: 擊中目標獲得分數並自動補充 5 發子彈！Lv.3 起目標會移動！
+            提示: 單關獲得 10 分以上即可過關！擊中目標自動補充 5 發子彈！Lv.3 起目標會移動！
         </div>
     </div>
 
     <!-- 遊戲 HUD -->
     <div id="hud">
         <div id="hp-display" class="hud-element">High Score: 0</div>
-        <div id="timer-display" class="hud-element">100.0s</div>
+        <div id="timer-display" class="hud-element">50.0s</div>
         <div id="score-display" class="hud-element">Score: 0</div>
         <div id="level-display" class="hud-element">Level: 1</div>
-        <div id="ammo-display" class="hud-element">Ammo: 30 / 120</div>
+        <div id="ammo-display" class="hud-element">Ammo: 30 / 30</div>
         <div id="reload-prompt" class="hud-element">RELOADING...</div>
     </div>
 
@@ -327,7 +328,7 @@
                 const titleH2 = this.startScreen.querySelector('h2');
                 const playBtn = this.startScreen.querySelector('.play-btn');
 
-                titleH1.innerText = titleText;
+                titleH1.innerText = "TARGET RUSH 3D";
                 titleH2.innerText = subtitleText;
                 playBtn.innerText = btnText;
                 this.highScoreRecord.innerText = `最高得分: ${this.highScore} 分`;
@@ -350,8 +351,8 @@
 
                 this.ammo = 30;
                 this.maxClip = 30;
-                this.reserveAmmo = 120;
-                this.maxReserveAmmo = 120;
+                this.reserveAmmo = 30;
+                this.maxReserveAmmo = 30;
                 this.fireRate = 0.1;
                 this.lastShotTime = 0;
                 this.isReloading = false;
@@ -364,9 +365,10 @@
 
             reset() {
                 this.ammo = 30;
-                this.reserveAmmo = 120;
+                this.reserveAmmo = 30;
                 this.isReloading = false;
                 this.reloadTimer = 0;
+                this.lastShotTime = 0;
             }
 
             addAmmo(amount) {
@@ -725,14 +727,15 @@
                 
                 this.weapon = new Weapon(this.camera, this.scene);
                 this.targetManager = new TargetManager(this.scene, () => {
-                    this.score++;
+                    this.score++; // 總得分
+                    this.levelScore++; // 該關得分
                     this.weapon.addAmmo(5); // 擊中目標自動補充 5 發子彈
                 });
 
                 this.score = 0;
+                this.levelScore = 0; // 該關當前得分
                 this.level = 1;
-                this.timeLeft = 100.0;
-
+                this.timeLeft = 50.0;
                 this.clock = new THREE.Clock();
                 this.isRunning = false;
 
@@ -844,21 +847,21 @@
                 const startScreen = document.getElementById('start-screen');
                 const playBtn = startScreen.querySelector('.play-btn');
 
-                playBtn.addEventListener('click', (e) => {
+                const requestPointerLockHandler = (e) => {
                     e.stopPropagation();
                     document.body.requestPointerLock();
-                });
+                };
 
-                startScreen.addEventListener('click', () => {
-                    document.body.requestPointerLock();
-                });
+                playBtn.onclick = requestPointerLockHandler;
+                startScreen.onclick = requestPointerLockHandler;
 
                 document.addEventListener('pointerlockchange', () => {
                     if (document.pointerLockElement === document.body) {
                         this.inputManager.isLocked = true;
                         this.uiManager.showGameUI();
                         if (!this.isRunning) {
-                            this.startNewGame(false);
+                            this.clock.start();
+                            this.isRunning = true;
                         }
                     } else {
                         this.inputManager.isLocked = false;
@@ -881,7 +884,8 @@
                     this.score = 0;
                     this.level = 1;
                 }
-                this.timeLeft = 100.0;
+                this.levelScore = 0; // 重設該關得分
+                this.timeLeft = 50.0;
                 this.player.reset();
                 this.weapon.reset();
                 this.targetManager.reset();
@@ -911,11 +915,12 @@
                     this.isRunning = false;
                     document.exitPointerLock();
 
-                    if (this.score >= 10) {
+                    // 檢查該關得分是否 >= 10 分
+                    if (this.levelScore >= 10) {
                         this.level++;
                         this.uiManager.showScreen(
                             `LEVEL ${this.level - 1} COMPLETED!`, 
-                            `恭喜過關！得分: ${this.score} 分。準備進入 Level ${this.level}`, 
+                            `恭喜過關！本關得分: ${this.levelScore} 分。準備進入 Level ${this.level}`, 
                             `[ START LEVEL ${this.level} ]`, 
                             this.score
                         );
@@ -925,16 +930,15 @@
                         
                         const nextLevelHandler = (e) => {
                             e.stopPropagation();
-                            playBtn.removeEventListener('click', nextLevelHandler);
                             this.startNewGame(true);
                             document.body.requestPointerLock();
                         };
-                        playBtn.onclick = null;
-                        playBtn.addEventListener('click', nextLevelHandler);
+                        playBtn.onclick = nextLevelHandler;
+                        startScreen.onclick = nextLevelHandler;
                     } else {
                         this.uiManager.showScreen(
                             "TIME'S UP!", 
-                            `未達 10 分過關標準。最終得分: ${this.score} 分`, 
+                            `本關僅得 ${this.levelScore} 分，未達 10 分過關標準！`, 
                             "[ TRY AGAIN ]", 
                             this.score
                         );
@@ -942,12 +946,11 @@
                         const playBtn = startScreen.querySelector('.play-btn');
                         const retryHandler = (e) => {
                             e.stopPropagation();
-                            playBtn.removeEventListener('click', retryHandler);
                             this.startNewGame(false);
                             document.body.requestPointerLock();
                         };
-                        playBtn.onclick = null;
-                        playBtn.addEventListener('click', retryHandler);
+                        playBtn.onclick = retryHandler;
+                        startScreen.onclick = retryHandler;
                         this.level = 1;
                     }
                     return;
