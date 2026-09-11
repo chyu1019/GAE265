@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePreview Studio - 即時預覽與下載工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+            tab-size: 4;
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-gray-900 border-b border-gray-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20">
+                <i class="fa-solid font-bold fa-code text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                    CodePreview Studio
+                </h1>
+                <p class="text-xs text-gray-400">即時 HTML/CSS/JS 編輯、預覽與下載</p>
+            </div>
+        </div>
+
+        <!-- Toolbar controls -->
+        <div class="flex items-center flex-wrap gap-2 text-sm">
+            <!-- Preset Select -->
+            <div class="relative">
+                <select id="presetSelect" class="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-gray-750 transition">
+                    <option value="welcome">✨ 預設範本: 歡迎卡片</option>
+                    <option value="particles">✨ 範本: Canvas 粒子效果</option>
+                    <option value="button3d">✨ 範本: 3D 互動按鈕</option>
+                    <option value="empty">📄 空白模板</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-2.5 top-3 text-xs text-gray-400 pointer-events-none"></i>
+            </div>
+
+            <!-- Auto Refresh Toggle -->
+            <label class="flex items-center gap-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 px-3 py-1.5 rounded-lg cursor-pointer transition select-none">
+                <input type="checkbox" id="autoUpdateToggle" checked class="w-4 h-4 text-blue-600 rounded bg-gray-900 border-gray-700 focus:ring-blue-500 focus:ring-offset-gray-900">
+                <span class="text-xs text-gray-300 font-medium">即時更新</span>
+            </label>
+
+            <!-- Manual Run Button -->
+            <button id="runBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-md shadow-blue-600/30 active:scale-95">
+                <i class="fa-solid fa-play"></i> 執行預覽
+            </button>
+
+            <!-- Popup Window Preview Button -->
+            <button id="popupBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-md shadow-indigo-600/30 active:scale-95" title="在新視窗獨立預覽頁面">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> 獨立視窗
+            </button>
+
+            <!-- Download Button -->
+            <button id="downloadBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-md shadow-emerald-600/30 active:scale-95">
+                <i class="fa-solid fa-download"></i> 下載 HTML
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Workspace -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 min-h-0">
+        
+        <!-- Left Side: Code Editors Section -->
+        <section class="flex flex-col bg-gray-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden min-h-[500px]">
+            <!-- Editor Tabs Header -->
+            <div class="bg-gray-950 border-b border-gray-800 p-2 flex items-center justify-between gap-2 overflow-x-auto">
+                <div class="flex items-center gap-1">
+                    <button data-tab="all" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-table-columns"></i> 三欄並排
+                    </button>
+                    <button data-tab="html" class="tab-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800 text-orange-400 flex items-center gap-1.5 transition">
+                        <i class="fa-brands fa-html5 text-orange-500"></i> HTML
+                    </button>
+                    <button data-tab="css" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 flex items-center gap-1.5 transition">
+                        <i class="fa-brands fa-css3-alt text-blue-400"></i> CSS
+                    </button>
+                    <button data-tab="js" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 flex items-center gap-1.5 transition">
+                        <i class="fa-brands fa-js text-yellow-400"></i> JavaScript
+                    </button>
+                </div>
+                <button id="clearCodeBtn" class="text-xs text-gray-500 hover:text-red-400 px-2 py-1 rounded transition" title="清空全部程式碼">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+
+            <!-- Code Input Container -->
+            <div class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto">
+                
+                <!-- HTML Box -->
+                <div id="htmlGroup" class="editor-group flex-1 flex flex-col bg-gray-950 border border-gray-800 rounded-xl overflow-hidden min-h-[140px]">
+                    <div class="bg-gray-900 px-3 py-1.5 border-b border-gray-800 flex justify-between items-center text-xs">
+                        <span class="text-orange-400 font-semibold flex items-center gap-1.5">
+                            <i class="fa-brands fa-html5"></i> HTML
+                        </span>
+                        <span id="htmlStats" class="text-gray-500 text-[10px]">0 字元</span>
+                    </div>
+                    <textarea id="htmlInput" spellcheck="false" placeholder="在此處輸入 HTML 結構..." class="w-full flex-1 bg-transparent text-gray-100 p-3 text-xs code-font resize-none focus:outline-none focus:ring-1 focus:ring-orange-500/50"></textarea>
+                </div>
+
+                <!-- CSS Box -->
+                <div id="cssGroup" class="editor-group flex-1 flex flex-col bg-gray-950 border border-gray-800 rounded-xl overflow-hidden min-h-[140px]">
+                    <div class="bg-gray-900 px-3 py-1.5 border-b border-gray-800 flex justify-between items-center text-xs">
+                        <span class="text-blue-400 font-semibold flex items-center gap-1.5">
+                            <i class="fa-brands fa-css3-alt"></i> CSS
+                        </span>
+                        <span id="cssStats" class="text-gray-500 text-[10px]">0 字元</span>
+                    </div>
+                    <textarea id="cssInput" spellcheck="false" placeholder="在此處輸入 CSS 樣式..." class="w-full flex-1 bg-transparent text-gray-100 p-3 text-xs code-font resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/50"></textarea>
+                </div>
+
+                <!-- JS Box -->
+                <div id="jsGroup" class="editor-group flex-1 flex flex-col bg-gray-950 border border-gray-800 rounded-xl overflow-hidden min-h-[140px]">
+                    <div class="bg-gray-900 px-3 py-1.5 border-b border-gray-800 flex justify-between items-center text-xs">
+                        <span class="text-yellow-400 font-semibold flex items-center gap-1.5">
+                            <i class="fa-brands fa-js"></i> JavaScript
+                        </span>
+                        <span id="jsStats" class="text-gray-500 text-[10px]">0 字元</span>
+                    </div>
+                    <textarea id="jsInput" spellcheck="false" placeholder="在此處輸入 JavaScript 程式碼..." class="w-full flex-1 bg-transparent text-gray-100 p-3 text-xs code-font resize-none focus:outline-none focus:ring-1 focus:ring-yellow-500/50"></textarea>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Right Side: Live Preview & Console Output -->
+        <section class="flex flex-col bg-gray-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden min-h-[500px]">
+            <!-- Preview Header -->
+            <div class="bg-gray-950 border-b border-gray-800 px-4 py-2.5 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-2.5 w-2.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs font-semibold text-gray-200">即時畫面預覽</span>
+                </div>
+
+                <!-- Responsive Viewport Presets -->
+                <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+                    <button data-size="100%" class="viewport-btn active px-2 py-1 text-[11px] rounded text-gray-300 hover:text-white font-medium" title="桌面全寬">
+                        <i class="fa-solid fa-desktop"></i>
+                    </button>
+                    <button data-size="768px" class="viewport-btn px-2 py-1 text-[11px] rounded text-gray-400 hover:text-white font-medium" title="平板 (768px)">
+                        <i class="fa-solid fa-tablet-screen-button"></i>
+                    </button>
+                    <button data-size="375px" class="viewport-btn px-2 py-1 text-[11px] rounded text-gray-400 hover:text-white font-medium" title="手機 (375px)">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Iframe Viewport Container -->
+            <div class="flex-1 bg-gray-950 p-2 flex justify-center items-center overflow-hidden relative">
+                <div id="iframeWrapper" class="w-full h-full transition-all duration-300 border border-gray-800 rounded-xl overflow-hidden bg-white shadow-2xl">
+                    <iframe id="previewIframe" class="w-full h-full border-0 bg-white" title="Preview Frame"></iframe>
+                </div>
+            </div>
+
+            <!-- Console Log Drawer -->
+            <div class="border-t border-gray-800 bg-gray-950 flex flex-col max-h-48">
+                <div class="bg-gray-900 px-3 py-1.5 border-b border-gray-800 flex justify-between items-center text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-terminal text-emerald-400"></i> 控制台 Console
+                        </span>
+                        <span id="logBadge" class="bg-gray-800 text-gray-400 text-[10px] px-1.5 py-0.5 rounded-full font-mono">0</span>
+                    </div>
+                    <button id="clearConsoleBtn" class="text-gray-500 hover:text-gray-300 text-[11px] transition">
+                        清空 Console
+                    </button>
+                </div>
+                <div id="consoleOutput" class="p-2 overflow-y-auto font-mono text-[11px] space-y-1 h-32 bg-gray-950 text-gray-300">
+                    <div class="text-gray-600 italic">[System] 控制台已就緒，所有 console.log 輸出將顯示於此...</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // Default Code Presets
+        const PRESETS = {
+            welcome: {
+                html: `<div class="card">
+  <div class="badge">🚀 LIVE PREVIEW</div>
+  <h1>歡迎使用 CodePreview Studio</h1>
+  <p>這是一個集成了即時預覽、控制台除錯與一鍵打包下載的 HTML/CSS/JS 開發工具。</p>
+  
+  <div class="counter-box">
+    <p>點擊次數：<span id="count">0</span></p>
+    <button id="btn">點擊測試互動</button>
+  </div>
+</div>`,
+                css: `body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #f8fafc;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2.5rem;
+  border-radius: 20px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  margin: 0 0 1rem 0;
+  font-size: 1.6rem;
+}
+
+p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.counter-box {
+  margin-top: 1.8rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}`,
+                js: `let count = 0;
+const btn = document.getElementById('btn');
+const countDisplay = document.getElementById('count');
+
+btn.addEventListener('click', () => {
+  count++;
+  countDisplay.textContent = count;
+  console.log('按鈕被點擊了！目前計數：', count);
+});
+
+console.log('頁面順利載入完成！');`
+            },
+            particles: {
+                html: `<canvas id="canvas"></canvas>
+<div class="overlay">
+  <h2>Canvas 動態粒子</h2>
+  <p>移動滑鼠進行互動</p>
+</div>`,
+                css: `body {
+  margin: 0;
+  overflow: hidden;
+  background: #050505;
+  font-family: sans-serif;
+}
+canvas {
+  display: block;
+}
+.overlay {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: white;
+  pointer-events: none;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}`,
+                js: `const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+const mouse = { x: null, y: null };
+
+window.addEventListener('mousemove', (e) => {
+  mouse.x = e.x;
+  mouse.y = e.y;
+  for (let i = 0; i < 3; i++) {
+    particles.push(new Particle());
+  }
+});
+
+class Particle {
+  constructor() {
+    this.x = mouse.x || canvas.width / 2;
+    this.y = mouse.y || canvas.height / 2;
+    this.size = Math.random() * 8 + 1;
+    this.speedX = Math.random() * 3 - 1.5;
+    this.speedY = Math.random() * 3 - 1.5;
+    this.color = \`hsl(\${Math.random() * 360}, 100%, 50%)\`;
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.size > 0.2) this.size -= 0.1;
+  }
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function animate() {
+  ctx.fillStyle = 'rgba(5, 5, 5, 0.1)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < particles.length; i++) {
+    particles[i].update();
+    particles[i].draw();
+    if (particles[i].size <= 0.2) {
+      particles.splice(i, 1);
+      i--;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+animate();
+console.log('粒子動畫啟動成功！');`
+            },
+            button3d: {
+                html: `<div class="container">
+  <button class="btn-3d">
+    <span>HOVER ME</span>
+  </button>
+</div>`,
+                css: `body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #111827;
+}
+
+.btn-3d {
+  position: relative;
+  padding: 16px 36px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 0 #047857, 0 15px 25px rgba(0,0,0,0.4);
+  transition: all 0.15s ease;
+}
+
+.btn-3d:hover {
+  transform: translateY(2px);
+  box-shadow: 0 8px 0 #047857, 0 10px 20px rgba(0,0,0,0.4);
+}
+
+.btn-3d:active {
+  transform: translateY(10px);
+  box-shadow: 0 0 0 #047857, 0 5px 10px rgba(0,0,0,0.4);
+}`,
+                js: `document.querySelector('.btn-3d').addEventListener('click', () => {
+  console.log('3D 按鈕經觸發按壓！');
+});`
+            },
+            empty: { html: '', css: '', js: '' }
+        };
+
+        // Element Selectors
+        const htmlInput = document.getElementById('htmlInput');
+        const cssInput = document.getElementById('cssInput');
+        const jsInput = document.getElementById('jsInput');
+        
+        const htmlStats = document.getElementById('htmlStats');
+        const cssStats = document.getElementById('cssStats');
+        const jsStats = document.getElementById('jsStats');
+
+        const previewIframe = document.getElementById('previewIframe');
+        const iframeWrapper = document.getElementById('iframeWrapper');
+        const consoleOutput = document.getElementById('consoleOutput');
+        const logBadge = document.getElementById('logBadge');
+        const autoUpdateToggle = document.getElementById('autoUpdateToggle');
+        
+        const runBtn = document.getElementById('runBtn');
+        const popupBtn = document.getElementById('popupBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const presetSelect = document.getElementById('presetSelect');
+        const clearConsoleBtn = document.getElementById('clearConsoleBtn');
+        const clearCodeBtn = document.getElementById('clearCodeBtn');
+
+        let logCount = 0;
+        let updateTimeout = null;
+        let popupWindow = null;
+        let currentDeviceSize = '100%';
+
+        // 裝置視窗尺寸設定 (寬 x 高)
+        const DEVICE_DIMENSIONS = {
+            '100%': { width: 1280, height: 800 },
+            '768px': { width: 768, height: 1024 },
+            '375px': { width: 375, height: 812 }
+        };
+
+        // Toast Notification Helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-emerald-600' : 'bg-blue-600';
+            const icon = type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info';
+
+            toast.className = `${bgClass} text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2 transform transition-all duration-300 opacity-0 translate-y-2 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Clear Console UI
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+            logCount = 0;
+            logBadge.textContent = '0';
+        }
+
+        // Add Log Entry to Custom Console Panel
+        function appendConsoleLog(type, message) {
+            logCount++;
+            logBadge.textContent = logCount;
+
+            const logRow = document.createElement('div');
+            logRow.className = 'flex items-start gap-2 border-b border-gray-900 pb-0.5';
+
+            let typeBadge = '<span class="text-gray-500">[LOG]</span>';
+            if (type === 'warn') typeBadge = '<span class="text-yellow-400">[WARN]</span>';
+            if (type === 'error') typeBadge = '<span class="text-red-400 font-bold">[ERROR]</span>';
+
+            logRow.innerHTML = `${typeBadge} <span class="break-all ${type === 'error' ? 'text-red-300' : 'text-gray-200'}">${escapeHtml(message)}</span>`;
+            consoleOutput.appendChild(logRow);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // Listen to console messages from preview iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'CONSOLE_LOG') {
+                appendConsoleLog(event.data.level, event.data.message);
+            }
+        });
+
+        // Main Render Function for Iframe
+        function renderPreview() {
+            clearConsole();
+
+            const html = htmlInput.value;
+            const css = cssInput.value;
+            const js = jsInput.value;
+
+            // Safe Console Interceptor Script formulation without breaking template literals
+            const consoleInterceptorScript = 
+                '<' + 'script>' +
+                '(function() {' +
+                '  var _log = console.log;' +
+                '  var _warn = console.warn;' +
+                '  var _error = console.error;' +
+                '  function sendToParent(type, args) {' +
+                '    var msg = Array.from(args).map(function(arg) {' +
+                '      if (typeof arg === "object" && arg !== null) {' +
+                '        try { return JSON.stringify(arg, null, 2); }' +
+                '        catch(e) { return String(arg); }' +
+                '      }' +
+                '      return String(arg);' +
+                '    }).join(" ");' +
+                '    window.parent.postMessage({ type: "CONSOLE_LOG", level: type, message: msg }, "*");' +
+                '  }' +
+                '  console.log = function() { _log.apply(console, arguments); sendToParent("log", arguments); };' +
+                '  console.warn = function() { _warn.apply(console, arguments); sendToParent("warn", arguments); };' +
+                '  console.error = function() { _error.apply(console, arguments); sendToParent("error", arguments); };' +
+                '  window.onerror = function(msg, url, line, col, error) {' +
+                '    sendToParent("error", ["Error: " + msg + " (Line " + line + ", Col " + col + ")"]);' +
+                '    return false;' +
+                '  };' +
+                '})();' +
+                '</' + 'script>';
+
+            const scriptClosing = '</' + 'script>';
+
+            const sourceDoc = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+${css}
+    </style>
+    ${consoleInterceptorScript}
+</head>
+<body>
+${html}
+    <script>
+        try {
+${js}
+        } catch (err) {
+            console.error(err);
+        }
+    ${scriptClosing}
+</body>
+</html>`;
+
+            const doc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+            doc.open();
+            doc.write(sourceDoc);
+            doc.close();
+
+            // 同步更新獨立彈出視窗的內容
+            if (popupWindow && !popupWindow.closed) {
+                updatePopupWindowContent();
+            }
+        }
+
+        // 重新繪製獨立視窗內容
+        function updatePopupWindowContent() {
+            if (!popupWindow || popupWindow.closed) return;
+            const html = htmlInput.value;
+            const css = cssInput.value;
+            const js = jsInput.value;
+
+            const scriptClosing = '</' + 'script>';
+            const popupDoc = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>獨立預覽 - Preview</title>
+    <style>
+${css}
+    </style>
+</head>
+<body>
+${html}
+    <script>
+        try {
+${js}
+        } catch (err) {
+            console.error(err);
+        }
+    ${scriptClosing}
+</body>
+</html>`;
+
+            popupWindow.document.open();
+            popupWindow.document.write(popupDoc);
+            popupWindow.document.close();
+        }
+
+        // Open Preview in External Popup Window
+        function openPopupPreview() {
+            const dim = DEVICE_DIMENSIONS[currentDeviceSize] || DEVICE_DIMENSIONS['100%'];
+            const features = `width=${dim.width},height=${dim.height},resizable=yes,scrollbars=yes`;
+
+            if (popupWindow && !popupWindow.closed) {
+                try {
+                    popupWindow.resizeTo(dim.width, dim.height);
+                    popupWindow.focus();
+                } catch (e) {}
+            } else {
+                popupWindow = window.open('', 'CodePreviewStudioPopup', features);
+            }
+
+            if (!popupWindow) {
+                showToast('請允許瀏覽器開啟彈出視窗', 'error');
+                return;
+            }
+
+            updatePopupWindowContent();
+            showToast('已開啟獨立預覽視窗！', 'success');
+        }
+
+        // Single File Downloader
+        function downloadHtmlFile() {
+            const html = htmlInput.value;
+            const css = cssInput.value;
+            const js = jsInput.value;
+
+            const scriptClosing = '</' + 'script>';
+            const fullContent = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Page</title>
+    <style>
+${css}
+    </style>
+</head>
+<body>
+${html}
+    <script>
+${js}
+    ${scriptClosing}
+</body>
+</html>`;
+
+            const blob = new Blob([fullContent], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'index.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('已開始下載 index.html 文件！', 'success');
+        }
+
+        // Update Stats Counters
+        function updateStats() {
+            htmlStats.textContent = `${htmlInput.value.length} 字元`;
+            cssStats.textContent = `${cssInput.value.length} 字元`;
+            jsStats.textContent = `${jsInput.value.length} 字元`;
+        }
+
+        // Schedule Auto Updates
+        function triggerAutoUpdate() {
+            updateStats();
+            if (autoUpdateToggle.checked) {
+                clearTimeout(updateTimeout);
+                updateTimeout = setTimeout(renderPreview, 300);
+            }
+        }
+
+        // Load Preset Code
+        function loadPreset(key) {
+            const data = PRESETS[key] || PRESETS.empty;
+            htmlInput.value = data.html;
+            cssInput.value = data.css;
+            jsInput.value = data.js;
+            updateStats();
+            renderPreview();
+            showToast('已載入選擇的範本', 'info');
+        }
+
+        // Tab Navigation Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-gray-800', 'text-orange-400', 'text-blue-400', 'text-yellow-400');
+                    b.classList.add('text-gray-400');
+                });
+
+                btn.classList.add('active', 'bg-gray-800');
+                btn.classList.remove('text-gray-400');
+
+                const tab = btn.getAttribute('data-tab');
+                const groups = {
+                    html: document.getElementById('htmlGroup'),
+                    css: document.getElementById('cssGroup'),
+                    js: document.getElementById('jsGroup')
+                };
+
+                if (tab === 'all') {
+                    Object.values(groups).forEach(g => g.classList.remove('hidden'));
+                } else {
+                    Object.keys(groups).forEach(k => {
+                        if (k === tab) groups[k].classList.remove('hidden');
+                        else groups[k].classList.add('hidden');
+                    });
+                }
+            });
+        });
+
+        // Viewport Resizing Buttons
+        document.querySelectorAll('.viewport-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.viewport-btn').forEach(b => {
+                    b.classList.remove('active', 'text-white');
+                    b.classList.add('text-gray-400');
+                });
+                btn.classList.add('active', 'text-white');
+                btn.classList.remove('text-gray-400');
+                
+                const size = btn.getAttribute('data-size');
+                currentDeviceSize = size;
+                iframeWrapper.style.width = size;
+
+                // 若獨立視窗已開啟，自動調整其寬高並聚焦
+                if (popupWindow && !popupWindow.closed) {
+                    const dim = DEVICE_DIMENSIONS[size] || DEVICE_DIMENSIONS['100%'];
+                    try {
+                        popupWindow.resizeTo(dim.width, dim.height);
+                        popupWindow.focus();
+                    } catch (e) {
+                        console.warn('無法自動調整彈出視窗尺寸', e);
+                    }
+                }
+            });
+        });
+
+        // Event Listeners for Code Editing
+        [htmlInput, cssInput, jsInput].forEach(input => {
+            input.addEventListener('input', triggerAutoUpdate);
+            // Tab key indention support
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    input.value = input.value.substring(0, start) + '  ' + input.value.substring(end);
+                    input.selectionStart = input.selectionEnd = start + 2;
+                    triggerAutoUpdate();
+                }
+            });
+        });
+
+        // Control Buttons Event Listeners
+        runBtn.addEventListener('click', renderPreview);
+        popupBtn.addEventListener('click', openPopupPreview);
+        downloadBtn.addEventListener('click', downloadHtmlFile);
+        clearConsoleBtn.addEventListener('click', clearConsole);
+
+        presetSelect.addEventListener('change', (e) => loadPreset(e.target.value));
+
+        clearCodeBtn.addEventListener('click', () => {
+            if (confirm('確定要清空所有內容嗎？')) {
+                htmlInput.value = '';
+                cssInput.value = '';
+                jsInput.value = '';
+                updateStats();
+                renderPreview();
+                showToast('已清空程式碼', 'info');
+            }
+        });
+
+        // Initialization on Load
+        window.addEventListener('load', () => {
+            loadPreset('welcome');
+        });
+    </script>
+</body>
+</html>
