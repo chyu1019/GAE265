@@ -7,11 +7,17 @@ gamma.ai
 notebook.google.com
 gem
 aistudio.google.com
+sites.google.com
+
 
 v0.dev
 
 https://editor.swagger.io
 
+
+音樂：
+suno
+https://usesuno.com/tools/downloader/
 
 
 
@@ -23,5 +29,11 @@ https://editor.swagger.io
   https://canva.link/q5albk81noae63e
   https://canva.link/qvb8rc68bozry5m
 
+https://ai365.fans/gae265-0904
+
+AI概論與商務應用:
+https://www.canva.com/design/DAHULMZ2FPM/KUYcgLA4jjNaFrThCt4wFQ/edit
+https://www.canva.com/design/DAHUY8uGW3c/BlE-bdZ07GTNvVAuirQ2cQ/edit
+https://www.canva.com/design/DAHVDMo2N3Q/dbleyzV8UEmt8ffqwwzVyQ/edit
 
 
