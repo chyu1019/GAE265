@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Security Technical Expert & Senior Systems Engineer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-body: #0d1117;
+            --bg-card: #161b22;
+            --bg-card-hover: #1c2128;
+            --bg-badge: #1f2937;
+            --border-color: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-cyan: #39c5bb;
+            --accent-purple: #bc8cff;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .resume-container {
+            max-width: 1050px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        /* Top Header / Profile Banner */
+        .profile-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 2rem;
+            padding: 3rem 2.5rem;
+            background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .profile-avatar-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-blue);
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.25);
+        }
+
+        .status-dot {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 16px;
+            height: 16px;
+            background-color: var(--accent-green);
+            border: 3px solid var(--bg-card);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .profile-name-title {
+            margin-bottom: 0.75rem;
+        }
+
+        .profile-name-title h1 {
+            font-size: clamp(2rem, 3.5vw, 2.6rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            line-height: 1.15;
+        }
+
+        .profile-name-title .subtitle {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .meta-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: var(--font-mono);
+        }
+
+        .badge.highlight {
+            background: rgba(63, 185, 80, 0.1);
+            color: var(--accent-green);
+            border-color: rgba(63, 185, 80, 0.3);
+        }
+
+        /* Stats Strip */
+        .stats-banner {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(22, 27, 34, 0.5);
+        }
+
+        .stat-box {
+            padding: 1.25rem 1.5rem;
+            text-align: center;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .stat-box:last-child {
+            border-right: none;
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            font-family: var(--font-mono);
+        }
+
+        .stat-desc {
+            font-size: 0.825rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
+        /* Two Column Main Content Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 2rem;
+            padding: 2.5rem;
+        }
+
+        /* Section Components */
+        .section-block {
+            margin-bottom: 2.25rem;
+        }
+
+        .section-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-header {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--accent-blue);
+        }
+
+        /* Profile Summary */
+        .summary-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* Technical Expertise Tags */
+        .skills-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .skill-category-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .tag-item {
+            background: #21262d;
+            color: var(--text-primary);
+            font-size: 0.825rem;
+            font-family: var(--font-mono);
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Experience Timeline */
+        .timeline-item {
+            position: relative;
+            padding-left: 1.5rem;
+            border-left: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--accent-blue);
+        }
+
+        .role-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .company-name {
+            font-size: 0.95rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .role-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-family: var(--font-mono);
+        }
+
+        .bullets-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .bullets-list li {
+            position: relative;
+            padding-left: 1.2rem;
+            color: var(--text-secondary);
+            font-size: 0.925rem;
+        }
+
+        .bullets-list li::before {
+            content: '▹';
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .bullets-list strong {
+            color: var(--text-primary);
+        }
+
+        /* Sub Cards */
+        .info-card {
+            background: #21262d;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .info-card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .info-card-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        /* Resume Footer */
+        .resume-footer {
+            padding: 1.5rem 2.5rem;
+            background: #161b22;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 850px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 1.75rem;
+            }
+
+            .profile-header {
+                padding: 2rem 1.75rem;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .meta-badges {
+                justify-content: center;
+            }
+
+            .stats-banner {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .stat-box {
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .stat-box:nth-child(2) {
+                border-right: none;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .stats-banner {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-box {
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="resume-container">
+        
+        <!-- Header Banner -->
+        <header class="profile-header">
+            <div class="profile-avatar-wrapper">
+                <img src="https://chyu1019.github.io/GAE265/pic/RestinBusiness.png" alt="Profile Photo" class="profile-avatar">
+                <div class="status-dot" title="Available for Technical Expert Opportunities"></div>
+            </div>
+
+            <div class="profile-info">
+                <div class="profile-name-title">
+                    <h1>Security Technical Expert</h1>
+                    <div class="subtitle">Senior Systems Engineer</div>
+                </div>
+
+                <div class="meta-badges">
+                    <span class="badge highlight">23+ Years R&D Experience</span>
+                    <span class="badge">Ex-Trend Micro Sr Staff Engineer</span>
+                    <span class="badge">ApexOne Core Specialist</span>
+                    <span class="badge">CISSP Trained</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Key Metrics Strip -->
+        <div class="stats-banner">
+            <div class="stat-box">
+                <div class="stat-num">23+</div>
+                <div class="stat-desc">Years R&D Excellence</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">&lt; 24h</div>
+                <div class="stat-desc">P0 Incident Resolution</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">1,400</div>
+                <div class="stat-desc">Automated QA Cases</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num">10s GB</div>
+                <div class="stat-desc">Debug Log Analysis</div>
+            </div>
+        </div>
+
+        <!-- Main Body Content -->
+        <main class="main-content">
+            
+            <!-- Left Column: Summary, Skills, Certifications -->
+            <div class="left-col">
+                
+                <section class="section-block">
+                    <h2 class="section-header">Profile Summary</h2>
+                    <p class="summary-text">
+                        A seasoned Software Engineer with 23 years of R&D experience, formerly a Sr Staff Engineer at Trend Micro focusing on ApexOne (SaaS / On-Prem). Transitioning into a <strong>Security Technical Expert</strong> role, bringing deep low-level systems-development expertise, architecture capabilities, and hands-on security product experience to advance enterprise security technology.
+                    </p>
+                </section>
+
+                <section class="section-block">
+                    <h2 class="section-header">Technical Expertise</h2>
+                    
+                    <div class="skills-group">
+                        <div>
+                            <div class="skill-category-title">Languages & Core Dev</div>
+                            <div class="tag-cloud">
+                                <span class="tag-item">C / C++</span>
+                                <span class="tag-item">C#</span>
+                                <span class="tag-item">PHP</span>
+                                <span class="tag-item">Python</span>
+                                <span class="tag-item">Windows Driver Level</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="skill-category-title">Architecture & Systems</div>
+                            <div class="tag-cloud">
+                                <span class="tag-item">MSMQ</span>
+                                <span class="tag-item">MSSQL</span>
+                                <span class="tag-item">Pattern Rule Engines</span>
+                                <span class="tag-item">Driver Callbacks</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="skill-category-title">Cloud Ops & Diagnostics</div>
+                            <div class="tag-cloud">
+                                <span class="tag-item">ADX</span>
+                                <span class="tag-item">OMS Log Analysis</span>
+                                <span class="tag-item">Health Monitoring</span>
+                                <span class="tag-item">Root-Cause Analysis</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="skill-category-title">Testing & Automation</div>
+                            <div class="tag-cloud">
+                                <span class="tag-item">Python Automation</span>
+                                <span class="tag-item">Test Asset Creation</span>
+                                <span class="tag-item">QA Integration</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section-block">
+                    <h2 class="section-header">Certifications & Training</h2>
+                    <div class="info-card">
+                        <div class="info-card-title">CISSP Trained</div>
+                        <div class="info-card-sub">Solid grounding in internationally recognized security frameworks</div>
+                    </div>
+                </section>
+
+                <section class="section-block">
+                    <h2 class="section-header">Recognitions</h2>
+                    <div class="info-card">
+                        <div class="info-card-title">AI Innovation Competition</div>
+                        <div class="info-card-sub">Participated in internal company competition with practical AI exposure</div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Right Column: Professional Experience -->
+            <div class="right-col">
+                
+                <section class="section-block">
+                    <h2 class="section-header">Professional Experience</h2>
+                    
+                    <div class="timeline-item">
+                        <div class="role-title">Sr Staff Engineer</div>
+                        <div class="company-name">Trend Micro — Endpoint Security R&D</div>
+                        <div class="role-meta">Core Engineering & SaaS Reliability</div>
+
+                        <ul class="bullets-list">
+                            <li>
+                                <strong>ApexOne Core Modules Development:</strong> Led the development and maintenance of core security engines for ApexOne (SaaS / On-Prem):
+                                <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                    <div>• <strong>iAC (Integrated Application Control):</strong> Low-level system driver callbacks & pattern-match rule engines.</div>
+                                    <div>• <strong>DLP (Data Loss Prevention):</strong> Safeguarding enterprise environments against data leakage.</div>
+                                    <div>• <strong>OPS (Outbreak Prevention Service):</strong> Rapid threat containment & outbreak mitigation service.</div>
+                                    <div>• <strong>CMAgent:</strong> High-reliability communication mechanism with TMCM console.</div>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>P0 Urgent Incident Mitigation:</strong> Focused on ApexOne SaaS cloud service health monitoring. Successfully identified root causes and delivered solutions/mitigations within <strong>24 hours for multiple P0-level incidents</strong> under high-pressure conditions.
+                            </li>
+                            <li>
+                                <strong>Log Reconstruction & Root-Cause Analysis:</strong> Skilled in diagnosing complex issues across tens of GBs of debug logs using Azure Data Explorer (ADX) and OMS.
+                            </li>
+                            <li>
+                                <strong>QA & Automation Leadership:</strong> Expanded QA automated test coverage from <strong>1,200 to 1,400 test cases</strong> using Python scripts (without modifying production code), turning real customer-reported bugs into long-term automated test assets.
+                            </li>
+                            <li>
+                                <strong>Engineering Mentorship:</strong> Mentored and guided the professional growth of 3 junior engineers to accelerate onboarding and technical excellence.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="resume-footer">
+            <div>Security Technical Expert Portfolio & Resume</div>
+            <div>Generated Static Document</div>
+        </footer>
+
+    </div>
+
+</body>
+</html>
