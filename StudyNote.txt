@@ -51,3 +51,7 @@ https://hackmd.io/@ATai/BJYJfCb9Mx
 https://hackmd.io/@ATai/rksAuud5Gx
 https://hackmd.io/@ATai/SkTdlfq5zg
 
+https://github.com/atai-lin/nlp-sample
+https://github.com/atai-lin/rag-demo
+
+
