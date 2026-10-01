@@ -54,4 +54,5 @@ https://hackmd.io/@ATai/SkTdlfq5zg
 https://github.com/atai-lin/nlp-sample
 https://github.com/atai-lin/rag-demo
 
-
+interview:
+https://github.com/WeThinkIn/AIGC-Interview-Book/blob/main/AI%20Agent基础/08_Agent_Harness_Engineering高频考点.md
