@@ -66,6 +66,8 @@ npm install -g @fission-ai/openspec@latest
 https://www.skills.sh/
 https://www.skills.sh/vercel-labs/skills/find-skill
 npx skills add https://github.com/vercel-labs/skills --skill find-skills
+https://github.com/atai-lin/ai-workflow-workshop
+https://github.com/atai-lin/SampleforGithubCopilot
 
 
 interview:
