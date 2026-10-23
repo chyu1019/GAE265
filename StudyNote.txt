@@ -69,6 +69,9 @@ npx skills add https://github.com/vercel-labs/skills --skill find-skills
 https://github.com/atai-lin/ai-workflow-workshop
 https://github.com/atai-lin/SampleforGithubCopilot
 
+vscode:
+https://mobiledev.tw/python-dev-in-vs-code/
+
 
 interview:
 https://github.com/WeThinkIn/AIGC-Interview-Book/blob/main/AI%20Agent基础/08_Agent_Harness_Engineering高频考点.md
